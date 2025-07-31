@@ -1,0 +1,16 @@
+﻿receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
+
+exporters:
+  debug:  # ✅ Replaced "logging" with "debug"
+  otlp:
+    endpoint: "http://localhost:4317"
+
+service:
+  pipelines:
+    logs:
+      receivers: [otlp]
+      exporters: [debug, otlp]
