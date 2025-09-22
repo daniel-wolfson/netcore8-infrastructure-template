@@ -7,13 +7,11 @@ namespace Custom.Framework.Kafka
     {
         bool RequiresTransactionalProducer { get; }
 
-        void ConfigureProducerConfig(ProducerConfig config, ProducerSettings settings);
-
-        Task<DeliveryResult<string, string>> ProduceAsync(
-            IProducer<string, string> producer,
-            IProducer<string, string>? transactionalProducer,
+        Task<DeliveryResult<string, string>> PublishAsync(
             string topic,
             Message<string, string> message,
+            IProducer<string, string> producer,
+            IProducer<string, string>? transactionalProducer,
             CancellationToken cancellationToken);
     }
 }

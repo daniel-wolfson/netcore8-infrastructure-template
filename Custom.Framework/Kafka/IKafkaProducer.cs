@@ -1,20 +1,23 @@
+using Confluent.Kafka;
+
 namespace Custom.Framework.Kafka
 {
     /// <summary>
     /// Interface for producing messages to Kafka topics
     /// </summary>
-    /// <typeparam name="TMessage">The type of message to be produced</typeparam>
-    public interface IKafkaProducer<TMessage>
+    public interface IKafkaProducer
     {
         /// <summary>
         /// Produces a single message to a Kafka topic
         /// </summary>
-        Task ProduceAsync(string topic, TMessage message, string? key = null, string? correlationId = null, CancellationToken cancellationToken = default);
+        Task PublishAsync(KafkaMessage message, int attemptCount = 1,
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Produces multiple messages to a Kafka topic in batch
         /// </summary>
-        Task ProduceBatchAsync(string topic, IEnumerable<(TMessage Message, string? Key)> messages, string? correlationId = null, CancellationToken cancellationToken = default);
+        Task PublishBatchAsync(string topic, IEnumerable<KafkaMessage> record, 
+            CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Flushes any pending messages

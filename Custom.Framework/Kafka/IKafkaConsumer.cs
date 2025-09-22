@@ -1,3 +1,4 @@
+using Confluent.Kafka;
 using System;
 using System.Threading.Tasks;
 
@@ -12,7 +13,7 @@ namespace Custom.Framework.Kafka
         /// Starts consuming messages from configured Kafka topics.
         /// This method initializes the consumer and begins message processing.
         /// </summary>
-        void Start();
+        Task SubscribeAsync(Func<ConsumeResult<string, string>, Task> messageHandler);
 
         /// <summary>
         /// Gracefully stops the Kafka consumer.
@@ -20,6 +21,6 @@ namespace Custom.Framework.Kafka
         /// and resources are properly released before shutting down.
         /// </summary>
         /// <returns>A Task representing the asynchronous stop operation</returns>
-        Task StopAsync();
+        Task UnsubscribeAsync();
     }
 }

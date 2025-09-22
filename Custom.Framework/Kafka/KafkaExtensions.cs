@@ -14,28 +14,28 @@ namespace Custom.Framework.Kafka
             var consumerSection = configuration.GetSection("Kafka:Consumer");
 
             // Build merged settings instances (common values first, then specific overrides)
-            var producerSettings = new ProducerSettings();
+            var producerSettings = new ProducerOptions();
             commonSection.Bind(producerSettings);
             producerSection.Bind(producerSettings);
 
-            var consumerSettings = new ConsumerSettings();
+            var consumerSettings = new ConsumerOptions();
             commonSection.Bind(consumerSettings);
             consumerSection.Bind(consumerSettings);
 
             // Register IConfiguration binding for consumers via IOptions<T>
             // Apply common section first, then specific overrides so specific keys win
-            services.Configure<ProducerSettings>(commonSection);
-            services.Configure<ProducerSettings>(producerSection);
+            services.Configure<ProducerOptions>(commonSection);
+            services.Configure<ProducerOptions>(producerSection);
 
-            services.Configure<ConsumerSettings>(commonSection);
-            services.Configure<ConsumerSettings>(consumerSection);
+            services.Configure<ConsumerOptions>(commonSection);
+            services.Configure<ConsumerOptions>(consumerSection);
 
             // Register concrete merged settings for direct injection (optional but convenient)
             //services.AddSingleton(producerSettings);
             //services.AddSingleton(consumerSettings);
 
             // Register producer/consumer implementations
-            services.AddSingleton(typeof(IKafkaProducer<>), typeof(KafkaProducer<>));
+            services.AddSingleton(typeof(IKafkaProducer), typeof(KafkaProducer));
             services.AddSingleton(typeof(IKafkaConsumer), typeof(KafkaConsumer));
 
             if (producerSettings.EnableHealthCheck)

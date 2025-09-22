@@ -1,126 +1,176 @@
-using Confluent.Kafka;
+﻿using Confluent.Kafka;
+using System.Threading.Channels;
 
 namespace Custom.Framework.Kafka
 {
     /// <summary>
-    /// A Kafka consumer that subscribes to a topic, continuously consumes messages,
-    /// invokes a provided message handler, and delegates commit/retry behavior to a delivery strategy.
-    /// Optimized for safer start/stop, deterministic disposal and better logging around shutdown.
+    /// A high-performance Kafka consumer with optimized message processing pipeline
     /// </summary>
     public class KafkaConsumer : IKafkaConsumer, IDisposable, IAsyncDisposable
     {
-        private readonly IConsumer<string, string> _consumer;
         private readonly ILogger _logger;
-        private readonly ConsumerSettings _settings;
-        private readonly Func<ConsumeResult<string, string>, Task> _messageHandler;
-        private readonly IConsumerDeliveryStrategy _consumerDeliveryStrategy;
+        private readonly ConsumerOptions _options;
+        private readonly IConsumer<string, string> _consumer;
+        private Func<ConsumeResult<string, string>, Task> _messageHandler;
+        private readonly IConsumerDeliveryStrategy _consumerDelivery;
         private readonly TimeSpan _errorBackoff;
-        // timeout to wait for graceful stop; can be overridden by settings if desired
         private readonly TimeSpan _gracefulStopTimeout;
+        private readonly IKafkaQueue? _deadLetterQueue;
+
+        // Processing pipeline optimizations
+        private readonly Channel<ConsumeResult<string, string>> _messageChannel;
+        private readonly ChannelWriter<ConsumeResult<string, string>> _channelWriter;
+        private readonly ChannelReader<ConsumeResult<string, string>> _channelReader;
+        private readonly int _maxConcurrency;
+        private readonly SemaphoreSlim _processingSemaphore;
 
         private CancellationTokenSource? _cts;
         private Task? _consumerTask;
-        private int _started; // 0 = not started, 1 = started
-        private int _stopping; // 0 = not stopping, 1 = stopping
+        private Task[]? _processingTasks;
+        private volatile int _started;
+        private volatile int _stopping;
         private bool _disposed;
 
-
         public KafkaConsumer(
-            ConsumerSettings settings,
+            ConsumerOptions options,
             ILogger logger,
             string topic,
-            Func<ConsumeResult<string, string>, Task> messageHandler,
-            IConsumerDeliveryStrategy? deliveryStrategy = null)
+            //Func<ConsumeResult<string, string>, Task> messageHandler,
+            IConsumerDeliveryStrategy? deliveryStrategy = null,
+            IKafkaQueue? deadLetterQueue = null)
         {
-            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            _options = options ?? throw new ArgumentNullException(nameof(options));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            //_messageHandler = messageHandler ?? throw new ArgumentNullException(nameof(messageHandler));
+            ArgumentException.ThrowIfNullOrWhiteSpace(topic);
 
-            if (string.IsNullOrWhiteSpace(topic))
-                throw new ArgumentException("Topic must be provided", nameof(topic));
+            _errorBackoff = _options.RetryBackoffMs != default
+                ? _options.RetryBackoffMs : TimeSpan.FromMilliseconds(1000);
+            _gracefulStopTimeout = _options.HealthCheckTimeout ?? TimeSpan.FromSeconds(30);
 
-            _messageHandler = messageHandler ?? throw new ArgumentNullException(nameof(messageHandler));
+            // ✅ Configure concurrent processing
+            _maxConcurrency = Math.Max(1, Environment.ProcessorCount / 2);
+            _processingSemaphore = new SemaphoreSlim(_maxConcurrency, _maxConcurrency);
 
-            var config = ConfigureConsumer(_settings);
+            // ✅ Create bounded channel for message buffering
+            var channelOptions = new BoundedChannelOptions(capacity: 1000)
+            {
+                FullMode = BoundedChannelFullMode.Wait,
+                SingleReader = false,
+                SingleWriter = true,
+                AllowSynchronousContinuations = false
+            };
 
-            _errorBackoff = _settings.RetryBackoffMs != default
-                ? _settings.RetryBackoffMs : TimeSpan.FromMilliseconds(1000);
+            _messageChannel = Channel.CreateBounded<ConsumeResult<string, string>>(channelOptions);
+            _channelWriter = _messageChannel.Writer;
+            _channelReader = _messageChannel.Reader;
 
-            // graceful stop timeout - if settings exposed a value, prefer it; otherwise use 30s
-            _gracefulStopTimeout = _settings.HealthCheckTimeout ?? TimeSpan.FromSeconds(30);
+            var consumerConfig = ConfigureConsumer(_options);
+            _consumerDelivery = deliveryStrategy ?? DeliveryStrategyFactory.CreateConsumerStrategy(consumerConfig, _options);
 
-            // allow injection of strategy, fallback to factory using settings.DeliverySemantics
-            // Let the delivery strategy configure consumer-specific settings
-            _consumerDeliveryStrategy = deliveryStrategy
-                ?? DeliveryStrategyFactory.CreateConsumerStrategy(_settings.DeliverySemantics, _settings);
-            
-            _consumerDeliveryStrategy.ConfigureConsumerConfig(config, _settings);
-
-            _consumer = new ConsumerBuilder<string, string>(config)
+            _consumer = new ConsumerBuilder<string, string>(consumerConfig)
                 .SetErrorHandler((_, e) => _logger.Error("Kafka Consumer error: {Reason}", e.Reason))
                 .SetLogHandler((_, m) => _logger.Debug("Kafka Consumer log: {Facility} {Message}", m.Facility, m.Message))
                 .SetPartitionsAssignedHandler((c, partitions) =>
                 {
-                    _logger.Information("Partitions assigned: {Partitions}", string.Join(",", partitions.Select(p => $"{p.Topic}:{p.Partition}")));
-                    c.Assign(partitions);
+                    var partitionInfo = string.Join(",", partitions.Select(p => $"{p.Topic}:{p.Partition}"));
+                    _logger.Information("Partitions assigned: {Partitions}", partitionInfo);
                 })
                 .SetPartitionsRevokedHandler((c, partitions) =>
                 {
-                    _logger.Information("Partitions revoked: {Partitions}", string.Join(",", partitions.Select(p => $"{p.Topic}:{p.Partition}")));
-                    c.Unassign();
+                    var partitionInfo = string.Join(",", partitions.Select(p => $"{p.Topic}:{p.Partition}"));
+                    _logger.Information("Partitions revoked: {Partitions}", partitionInfo);
                 })
                 .Build();
 
             _consumer.Subscribe(topic);
+
+            // Initialize DLQ if needed
+            if (options.EnableDeadLetterQueue && deadLetterQueue == null)
+            {
+                var dlqProducerConfig = new ProducerConfig
+                {
+                    BootstrapServers = options.BootstrapServers,
+                    ClientId = $"{options.ClientId}-dlq",
+                    EnableIdempotence = true,
+                    LingerMs = 5,
+                    BatchSize = 16384
+                };
+                _deadLetterQueue = new KafkaQueue(dlqProducerConfig, logger, options.DeadLetterQueueTopicSuffix);
+            }
+            else
+            {
+                _deadLetterQueue = deadLetterQueue;
+            }
         }
 
-        private ConsumerConfig ConfigureConsumer(ConsumerSettings settings)
+        private ConsumerConfig ConfigureConsumer(ConsumerOptions options)
         {
             var config = new ConsumerConfig
             {
-                BootstrapServers = settings.BootstrapServers,
-                GroupId = settings.GroupId,
-                ClientId = settings.ClientId,
+                BootstrapServers = options.BootstrapServers,
+                GroupId = options.GroupId,
+                ClientId = options.ClientId,
                 EnableAutoCommit = false,
                 AutoOffsetReset = AutoOffsetReset.Earliest,
-                // optimize for high throughput
-                FetchMaxBytes = settings.MaxFetchBytes,
-                MaxPartitionFetchBytes = settings.MaxPartitionFetchBytes
+                
+                // ✅ Optimized fetch settings for better throughput
+                FetchMaxBytes = options.MaxFetchBytes,
+                MaxPartitionFetchBytes = options.MaxPartitionFetchBytes,
+                FetchMinBytes = 1024, // Wait for at least 1KB before returning
+                FetchWaitMaxMs = 100,  // Max wait time for batch
+                
+                // ✅ Session and heartbeat optimizations
+                SessionTimeoutMs = 30000,
+                HeartbeatIntervalMs = 10000,
+                MaxPollIntervalMs = 300000,
+                
+                // ✅ Reduce metadata refresh overhead
+                MetadataMaxAgeMs = 300000,
+                TopicMetadataRefreshIntervalMs = 300000
             };
 
-            if (settings.ConsumerConfig != null)
+            if (options.ConsumerConfig != null)
             {
-                foreach (var kv in settings.ConsumerConfig)
+                foreach (var kv in options.ConsumerConfig)
                     config.Set(kv.Key, kv.Value);
             }
 
             return config;
         }
 
-        /// <summary>
-        /// Starts the consumer background loop. Idempotent.
-        /// </summary>
-        public void Start()
+        public Task SubscribeAsync(Func<ConsumeResult<string, string>, Task> messageHandler)
         {
+            _messageHandler = messageHandler;
+
             if (Interlocked.Exchange(ref _started, 1) == 1)
             {
-                _logger.Debug("Start called but consumer already started.");
-                return;
+                _logger.Debug("Consumer already started");
+                return Task.CompletedTask;
             }
 
             _cts = new CancellationTokenSource();
-            // run the processing loop on the thread pool
-            _consumerTask = Task.Run(() => ConsumeProcessAsync(_cts.Token), CancellationToken.None);
-            _logger.Information("Kafka consumer started.");
+
+            // ✅ SubscribeAsync consumer task (producer to channel)
+            _consumerTask = Task.Run(async () => await ConsumeToChannelAsync(_cts.Token), CancellationToken.None);
+
+            // ✅ SubscribeAsync multiple processing tasks (consumers from channel)
+            _processingTasks = new Task[_maxConcurrency];
+            for (int i = 0; i < _maxConcurrency; i++)
+            {
+                var taskIndex = i;
+                _processingTasks[i] = Task.Run(async () => await ProcessFromChannelAsync(taskIndex, _cts.Token), CancellationToken.None);
+            }
+
+            _logger.Information("Kafka consumer started with {Concurrency} processing threads", _maxConcurrency);
+            return Task.CompletedTask;
         }
 
-        /// <summary>
-        /// Stops the consumer gracefully, waiting up to configured timeout.
-        /// </summary>
-        public async Task StopAsync()
+        public async Task UnsubscribeAsync()
         {
             if (Interlocked.Exchange(ref _stopping, 1) == 1)
             {
-                _logger.Debug("StopAsync called but stop already in progress.");
+                _logger.Debug("Stop already in progress");
                 if (_consumerTask != null)
                     await _consumerTask.ConfigureAwait(false);
                 return;
@@ -128,34 +178,25 @@ namespace Custom.Framework.Kafka
 
             try
             {
-                if (_cts == null)
-                {
-                    _logger.Debug("StopAsync called but consumer was not started.");
-                    return;
-                }
+                if (_cts == null) return;
 
                 _cts.Cancel();
+                _channelWriter.Complete();
 
-                if (_consumerTask != null)
+                // ✅ Wait for all tasks with timeout
+                var allTasks = new List<Task>();
+                if (_consumerTask != null) allTasks.Add(_consumerTask);
+                if (_processingTasks != null) allTasks.AddRange(_processingTasks);
+
+                var completedTask = await Task.WhenAny(
+                    Task.WhenAll(allTasks),
+                    Task.Delay(_gracefulStopTimeout)
+                ).ConfigureAwait(false);
+
+                if (completedTask != Task.WhenAll(allTasks))
                 {
-                    var completed = await Task.WhenAny(_consumerTask, Task.Delay(_gracefulStopTimeout)).ConfigureAwait(false);
-                    if (completed != _consumerTask)
-                    {
-                        _logger.Warning("Consumer did not stop within {Timeout}. Forcing Close.", _gracefulStopTimeout);
-                        try
-                        {
-                            _consumer.Close();
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.Warning(ex, "Error during forced Close");
-                        }
-                    }
-                    else
-                    {
-                        // ensure any exceptions are observed
-                        await _consumerTask.ConfigureAwait(false);
-                    }
+                    _logger.Warning("Consumer tasks did not complete within timeout, forcing close");
+                    _consumer.Close();
                 }
             }
             catch (Exception ex)
@@ -164,28 +205,14 @@ namespace Custom.Framework.Kafka
             }
             finally
             {
-                // consumer.Close() may be called already; calling again is safe but guard exceptions
-                try
-                {
-                    _consumer.Close();
-                }
-                catch (Exception ex)
-                {
-                    _logger.Debug(ex, "Close during StopAsync threw");
-                }
-
-                // dispose cancellation source and reset start flag so the instance is not reusable
-                try
-                {
-                    _cts.Dispose();
-                }
-                catch { /* ignore */ }
-
+                try { _consumer.Close(); } catch { }
+                try { _cts?.Dispose(); } catch { }
                 _cts = null;
             }
         }
 
-        private async Task ConsumeProcessAsync(CancellationToken token)
+        // ✅ Optimized consume loop - single responsibility: feed the channel
+        private async Task ConsumeToChannelAsync(CancellationToken token)
         {
             while (!token.IsCancellationRequested)
             {
@@ -194,54 +221,137 @@ namespace Custom.Framework.Kafka
                     var result = _consumer.Consume(token);
                     if (result == null) continue;
 
-                    try
-                    {
-                        await _messageHandler(result).ConfigureAwait(false);
-                        // Let the strategy decide how to handle post-processing (commit/none)
-                        await _consumerDeliveryStrategy.HandleAfterProcessAsync(_consumer, result).ConfigureAwait(false);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.Error(ex, "Message handler failed for topic {Topic} partition {Partition} offset {Offset}",
-                            result.Topic, result.Partition, result.Offset);
-                        // TODO: implement DLQ publishing
-                    }
+                    // ✅ Non-blocking write to channel with backpressure handling
+                    await _channelWriter.WriteAsync(result, token).ConfigureAwait(false);
                 }
                 catch (OperationCanceledException) when (token.IsCancellationRequested)
                 {
-                    // expected during shutdown
                     break;
                 }
                 catch (ConsumeException ex)
                 {
-                    _logger.Error(ex, "Consume exception");
-                    try
-                    {
-                        await Task.Delay(_errorBackoff, token).ConfigureAwait(false);
-                    }
-                    catch (OperationCanceledException) when (token.IsCancellationRequested)
-                    {
-                        break;
-                    }
+                    _logger.Error(ex, "Consume exception: {Reason}", ex.Error.Reason);
+                    await DelayWithCancellation(_errorBackoff, token).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
-                    _logger.Error(ex, "Unexpected consumer error");
-                    try
-                    {
-                        await Task.Delay(_errorBackoff, token).ConfigureAwait(false);
-                    }
-                    catch (OperationCanceledException) when (token.IsCancellationRequested)
-                    {
-                        break;
-                    }
+                    _logger.Error(ex, "Unexpected consume error");
+                    await DelayWithCancellation(_errorBackoff, token).ConfigureAwait(false);
+                }
+            }
+
+            _channelWriter.Complete();
+        }
+
+        // ✅ Optimized processing loop - concurrent message handling
+        private async Task ProcessFromChannelAsync(int workerIndex, CancellationToken token)
+        {
+            await foreach (var result in _channelReader.ReadAllAsync(token).ConfigureAwait(false))
+            {
+                await _processingSemaphore.WaitAsync(token).ConfigureAwait(false);
+                try
+                {
+                    await ProcessMessageWithRetryAsync(result, token, workerIndex).ConfigureAwait(false);
+                }
+                finally
+                {
+                    _processingSemaphore.Release();
                 }
             }
         }
 
-        /// <summary>
-        /// Async dispose to allow awaiting graceful shutdown.
-        /// </summary>
+        private async Task ProcessMessageWithRetryAsync(ConsumeResult<string, string> result, 
+            CancellationToken token, int workerIndex)
+        {
+            var attempts = 0;
+            var maxRetries = _options.MaxRetries;
+
+            while (attempts <= maxRetries && !token.IsCancellationRequested)
+            {
+                try
+                {
+                    // ✅ Execute handler without ConfigureAwait in user code path
+                    await _messageHandler(result);
+                    await _consumerDelivery.HandleAfterProcessAsync(_consumer, result).ConfigureAwait(false);
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    attempts++;
+
+                    if (!IsRetryableException(ex) || attempts > maxRetries)
+                    {
+                        await HandlePermanentFailure(result, ex).ConfigureAwait(false);
+                        return;
+                    }
+
+                    var backoff = CalculateBackoff(attempts);
+                    _logger.Warning(ex, "Worker {WorkerIndex}: Retry {Attempt}/{MaxRetries} after {Delay}ms for partition {Partition} offset {Offset}",
+                        workerIndex, attempts, maxRetries, backoff.TotalMilliseconds, result.Partition, result.Offset);
+
+                    await DelayWithCancellation(backoff, token).ConfigureAwait(false);
+                }
+            }
+        }
+
+        private async Task HandlePermanentFailure(ConsumeResult<string, string> result, Exception ex)
+        {
+            _logger.Error(ex, "Message permanently failed after {MaxRetries} attempts for topic {Topic} partition {Partition} offset {Offset}",
+                _options.MaxRetries, result.Topic, result.Partition, result.Offset);
+
+            try
+            {
+                if (_deadLetterQueue != null)
+                {
+                    var message = new KafkaMessage
+                    {
+                        Topic = result.Topic,
+                        Partition = result.Partition.Value,
+                        Offset = result.Offset.Value,
+                        Value = result.Message.Value,
+                        Key = result.Message.Key
+                    };
+
+                    await _deadLetterQueue.PublishAsync(message, ex, _options.MaxRetries + 1).ConfigureAwait(false);
+                }
+
+                // ✅ Always commit to prevent infinite retry loops
+                await _consumerDelivery.HandleAfterProcessAsync(_consumer, result).ConfigureAwait(false);
+            }
+            catch (Exception commitEx)
+            {
+                _logger.Error(commitEx, "Failed to handle permanent failure cleanup");
+            }
+        }
+
+        private static bool IsRetryableException(Exception ex)
+        {
+            // ✅ Use pattern matching for better performance
+            return ex is not (ArgumentException or ArgumentNullException or InvalidOperationException or FormatException);
+        }
+
+        private TimeSpan CalculateBackoff(int attempt)
+        {
+            // ✅ Optimized exponential backoff with jitter
+            var baseMs = (int)_options.RetryBackoffMs.TotalMilliseconds;
+            var exponentialMs = Math.Min(baseMs * (1 << (attempt - 1)), 30000); // Cap at 30s
+            var jitterMs = Random.Shared.Next(0, Math.Max(1, exponentialMs / 10));
+            return TimeSpan.FromMilliseconds(exponentialMs + jitterMs);
+        }
+
+        // ✅ Helper method to avoid exception allocation during normal cancellation
+        private static async Task DelayWithCancellation(TimeSpan delay, CancellationToken token)
+        {
+            try
+            {
+                await Task.Delay(delay, token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException) when (token.IsCancellationRequested)
+            {
+                // Expected during shutdown
+            }
+        }
+
         public async ValueTask DisposeAsync()
         {
             if (_disposed) return;
@@ -249,53 +359,46 @@ namespace Custom.Framework.Kafka
 
             try
             {
-                // DisposeAsync - waits for graceful stop (up to _gracefulStopTimeout)
-                await StopAsync().ConfigureAwait(false);
+                await UnsubscribeAsync().ConfigureAwait(false);
             }
             finally
             {
-                // Let Dispose() handle the actual resource cleanup
-                Dispose();
+                Dispose(false);
                 GC.SuppressFinalize(this);
             }
         }
 
-        /// <summary>
-        /// Synchronous dispose. Attempts a graceful stop, but will not block indefinitely.
-        /// Prefer using StopAsync or DisposeAsync for graceful async shutdown.
-        /// </summary>
         public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        private void Dispose(bool disposing)
         {
             if (_disposed) return;
             _disposed = true;
 
-            try
+            if (disposing)
             {
-                // Signal shutdown if not already stopping
-                if (Interlocked.Exchange(ref _stopping, 1) == 0)
+                try
                 {
-                    _cts?.Cancel();
-                }
+                    if (Interlocked.Exchange(ref _stopping, 1) == 0)
+                        _cts?.Cancel();
 
-                // Wait briefly for consumer task to complete
-                if (_consumerTask != null && !_consumerTask.IsCompleted)
+                    _consumerTask?.Wait(5000);
+                    if (_processingTasks != null)
+                        Task.WaitAll(_processingTasks, 5000);
+
+                    _consumer?.Close();
+                    _consumer?.Dispose();
+                    _processingSemaphore?.Dispose();
+                    _cts?.Dispose();
+                }
+                catch (Exception ex)
                 {
-                    _consumerTask.Wait(5000); // 5 second timeout, avoid TimeSpan allocation
+                    _logger?.Warning(ex, "Error during disposal");
                 }
-
-                // Close and dispose consumer resources
-                _consumer.Close();
-                _consumer.Dispose();
-            }
-            catch (Exception ex)
-            {
-                _logger.Warning(ex, "Error during Kafka consumer disposal");
-            }
-            finally
-            {
-                // Always clean up cancellation token source
-                _cts?.Dispose();
-                GC.SuppressFinalize(this);
             }
         }
     }

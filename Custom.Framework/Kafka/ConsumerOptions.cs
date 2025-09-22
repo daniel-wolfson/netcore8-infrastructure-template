@@ -1,9 +1,11 @@
+using Confluent.Kafka;
+
 namespace Custom.Framework.Kafka
 {
     /// <summary>
     /// Settings specific to Kafka consumers.
     /// </summary>
-    public class ConsumerSettings : KafkaSettings
+    public class ConsumerOptions : ClientConfig
     {
         /// <summary>
         /// Gets or sets the consumer group identifier. Used for consumer group coordination and offset management.
@@ -18,7 +20,7 @@ namespace Custom.Framework.Kafka
         public int? AutoCommitIntervalMs { get; set; } = 5000;
 
         /// <summary>
-        /// Retry/backoff (default inherited from KafkaSettings, keep consumer override if needed).
+        /// Retry/backoff (default inherited from KafkaOptions, keep consumer override if needed).
         /// Gets or sets the delay between retry attempts.
         /// Shared backoff used by producer/consumer logic where applicable.
         /// </summary>
@@ -29,5 +31,19 @@ namespace Custom.Framework.Kafka
 
         // Delivery semantics (kept here so factory selection remains simple)
         public DeliverySemantics DeliverySemantics { get; set; } = DeliverySemantics.AtLeastOnce;
+
+        /// <summary>
+        /// Gets or sets whether dead letter queue is enabled for permanently failed messages.
+        /// </summary>
+        public bool EnableDeadLetterQueue { get; set; } = true;
+
+        /// <summary>
+        /// Gets or sets the suffix for dead letter queue topic names.
+        /// </summary>
+        public string DeadLetterQueueTopicSuffix { get; set; } = "-dlq";
+        public TimeSpan? HealthCheckTimeout { get; internal set; }
+        public int MaxRetries { get; set; }
+        public bool EnableMetrics { get; set; }
+        public bool EnableHeBalthCheck { get; set; }
     }
 }
