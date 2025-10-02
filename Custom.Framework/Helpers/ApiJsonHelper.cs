@@ -1,10 +1,12 @@
-﻿using Custom.Framework.Configuration;
+﻿using Confluent.Kafka;
+using Custom.Framework.Configuration;
 using Custom.Framework.Configuration.Models;
 using Custom.Framework.Exceptions;
 using Custom.Framework.Models;
 using Custom.Framework.Models.Base;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Serilog;
@@ -151,6 +153,36 @@ namespace Custom.Framework.Helpers
                 });
 
             return json;
+        }
+
+        public static string ToJson<TKey, TValue>(this ConsumeResult<TKey, TValue> result)
+        {
+            if (result == null)
+                return string.Empty;
+
+            try
+            {
+                var jsonString = JsonConvert.SerializeObject(new
+                {
+                    result.Topic,
+                    Partition = result.Partition.Value,
+                    Offset = result.Offset.Value,
+                    result.Message.Key,
+                    result.Message.Value,
+                    Timestamp = result.Message.Timestamp.UtcDateTime
+                        .ToString("o", CultureInfo.InvariantCulture),
+                    Headers = result.Message.Headers?
+                        .ToDictionary(h => h.Key, h => h.GetValueBytes() != null 
+                            ? System.Text.Encoding.UTF8.GetString(h.GetValueBytes()) : null)
+                });
+                return jsonString;
+            }
+            catch (Exception ex)
+            {
+                Log.Logger.Error("{TITLE} exception: {Exception}. \nStackTrace: {StackTrace}\n",
+                    ApiHelper.LogTitle(), ex.InnerException?.Message ?? ex.Message, ex.StackTrace);
+                return string.Empty;
+            }
         }
 
         /// <summary>

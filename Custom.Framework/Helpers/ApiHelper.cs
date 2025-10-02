@@ -123,7 +123,7 @@ namespace Custom.Framework.Helpers
         {
             var filePath = callerFilePath.Replace("\\", "/");
             var callerTypeName = Path.GetFileNameWithoutExtension(filePath);
-            title = string.IsNullOrEmpty(title) ? "" : " " + title;
+            title = string.IsNullOrEmpty(title) ? string.Empty : " " + title;
             return $"{callerTypeName}.{callerMemberName}{title}:";
         }
 

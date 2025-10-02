@@ -4,10 +4,10 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 public class KafkaHealthCheck : IHealthCheck
 {
-    private readonly KafkaSettings _settings;
+    private readonly KafkaOptions _settings;
     private readonly ILogger _logger;
 
-    public KafkaHealthCheck(KafkaSettings settings, ILogger logger)
+    public KafkaHealthCheck(KafkaOptions settings, ILogger logger)
     {
         _settings = settings;
         _logger = logger;
@@ -19,7 +19,7 @@ public class KafkaHealthCheck : IHealthCheck
         {
             using var adminClient = new AdminClientBuilder(new AdminClientConfig 
             { 
-                BootstrapServers = _settings.BootstrapServers 
+                BootstrapServers = _settings.Common.BootstrapServers 
             }).Build();
 
             var metadata = adminClient.GetMetadata(TimeSpan.FromSeconds(5));
