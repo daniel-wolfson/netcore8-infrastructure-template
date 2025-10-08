@@ -1,4 +1,6 @@
-﻿using Serilog;
+﻿using Custom.Framework.Helpers;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Serilog;
 using Serilog.Events;
 using Serilog.Parsing;
 using System.Text;
@@ -89,7 +91,6 @@ namespace Custom.Framework.TestFactory.Core
                 else
                     format.Append(tok);
             }
-
             Log(logEvent.Level, logEvent.Timestamp.LocalDateTime, format.ToString(), messages.ToArray());
         }
 
@@ -102,7 +103,15 @@ namespace Custom.Framework.TestFactory.Core
         {
             if (_outputSeverities != null && _outputSeverities.Contains(level))
             {
-                _outputWriter($"[{time.ToLongTimeString()} {ConvertLogEventLevelToString(level)}] {template}", messages);
+                var _outputWriterTitle = $"[{time:T} {ConvertLogEventLevelToString(level)}]";
+                try
+                {
+                    _outputWriter($"{_outputWriterTitle} {template}", messages);
+                }
+                catch (Exception ex)
+                {
+                    _outputWriter($"{_outputWriterTitle} TestLoggerWrapper.Log error: {ex.Message}");
+                }
             }
         }
 

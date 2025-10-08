@@ -1,10 +1,12 @@
-﻿using Custom.Framework.Configuration;
+﻿using Confluent.Kafka;
+using Custom.Framework.Configuration;
 using Custom.Framework.Configuration.Models;
 using Custom.Framework.Exceptions;
 using Custom.Framework.Models;
 using Custom.Framework.Models.Base;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Serilog;
@@ -151,6 +153,36 @@ namespace Custom.Framework.Helpers
                 });
 
             return json;
+        }
+
+        public static string ToJson<TKey, TValue>(this ConsumeResult<TKey, TValue> result)
+        {
+            if (result == null)
+                return string.Empty;
+
+            try
+            {
+                var jsonString = JsonConvert.SerializeObject(new
+                {
+                    result.Topic,
+                    Partition = result.Partition.Value,
+                    Offset = result.Offset.Value,
+                    result.Message.Key,
+                    result.Message.Value,
+                    Timestamp = result.Message.Timestamp.UtcDateTime
+                        .ToString("o", CultureInfo.InvariantCulture),
+                    Headers = result.Message.Headers?
+                        .ToDictionary(h => h.Key, h => h.GetValueBytes() != null 
+                            ? System.Text.Encoding.UTF8.GetString(h.GetValueBytes()) : null)
+                });
+                return jsonString;
+            }
+            catch (Exception ex)
+            {
+                Log.Logger.Error("{TITLE} exception: {Exception}. \nStackTrace: {StackTrace}\n",
+                    ApiHelper.LogTitle(), ex.InnerException?.Message ?? ex.Message, ex.StackTrace);
+                return string.Empty;
+            }
         }
 
         /// <summary>
@@ -329,7 +361,60 @@ namespace Custom.Framework.Helpers
 
         public static bool IsJsonString(string json)
         {
-            return json.StartsWith("\"") && json.EndsWith("\"") && json.Length > 2;
+            if (string.IsNullOrWhiteSpace(json))
+                return false;
+
+            var trimmed = json.Trim();
+            try
+            {
+                using var doc = JsonDocument.Parse(trimmed);
+                return doc.RootElement.ValueKind == JsonValueKind.String;
+            }
+            catch (System.Text.Json.JsonException)
+            {
+                return false;
+            }
+        }
+
+        public static bool ContainsValidJson(string text, out string? jsonPart)
+        {
+            jsonPart = null;
+            if (string.IsNullOrWhiteSpace(text))
+                return false;
+
+            // Ищем первую '{' и последнюю '}'
+            int start = text.IndexOf('{');
+            int end = text.LastIndexOf('}');
+
+            if (start == -1 || end == -1 || end <= start)
+                return false;
+
+            jsonPart = text.Substring(start, end - start + 1);
+
+            // Проверяем сбалансированность скобок
+            int depth = 0;
+            foreach (char c in jsonPart)
+            {
+                if (c == '{') depth++;
+                else if (c == '}') depth--;
+
+                if (depth < 0) // лишняя закрывающая скобка
+                    return false;
+            }
+
+            if (depth != 0)
+                return false; // есть незакрытые скобки
+
+            // Теперь пробуем разобрать JSON
+            try
+            {
+                using var doc = JsonDocument.Parse(jsonPart);
+                return true;
+            }
+            catch (System.Text.Json.JsonException)
+            {
+                return false;
+            }
         }
 
         public static bool IsValidAndNotEmpty<T>(string jsonString)

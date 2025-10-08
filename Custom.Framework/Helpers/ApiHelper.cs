@@ -123,7 +123,7 @@ namespace Custom.Framework.Helpers
         {
             var filePath = callerFilePath.Replace("\\", "/");
             var callerTypeName = Path.GetFileNameWithoutExtension(filePath);
-            title = string.IsNullOrEmpty(title) ? "" : " " + title;
+            title = string.IsNullOrEmpty(title) ? string.Empty : " " + title;
             return $"{callerTypeName}.{callerMemberName}{title}:";
         }
 
@@ -369,6 +369,12 @@ namespace Custom.Framework.Helpers
             if (string.IsNullOrEmpty(str))
                 return false;
             return Regex.IsMatch(str, @"^\d+$");
+        }
+
+        public static void AddOrUpdate<TKey, TValue>(this Dictionary<TKey, TValue> dictionary, TKey key, TValue value)
+            where TKey : notnull
+        {
+            dictionary[key] = value; // Uses indexer - overwrites if exists
         }
     }
 }

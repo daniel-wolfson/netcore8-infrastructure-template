@@ -29,7 +29,7 @@ public class ReloadCacheService : BackgroundService
         _logger = logger;
         _scopeFactory = scopeFactory;
         _optimaConfig = apiSettingsOptions.Value.Optima;
-        _cacheMemoryReloadTTL = TimeSpan.FromSeconds(_optimaConfig.CacheMemoryReloadTTL);
+        //_cacheMemoryReloadTTL = TimeSpan.FromSeconds(_optimaConfig.CacheMemoryReloadTTL);
 
         _appLifetime.ApplicationStarted.Register(() =>
         {

@@ -1,31 +1,15 @@
-﻿using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
+﻿using HotChocolate.Execution;
 
-var builder = WebApplication.CreateBuilder(args);
-
-// Add services to the container.
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-var app = builder.Build();
-
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+namespace Custom.Framework.Tests
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    public partial class TestProgram
+    {
+        private static void Main(string[] args)
+        {
+            var builder = WebApplication.CreateBuilder(args);
+            builder.Services.AddControllers();
+            var app = builder.Build();
+            app.Run();
+        }
+    }
 }
-
-app.UseHttpsRedirection();
-app.UseRouting();
-app.UseAuthorization();
-app.MapControllers();
-
-app.Run();
-
-/// <summary>
-/// Marker class for WebApplicationFactory
-/// </summary>
-public partial class Program { }

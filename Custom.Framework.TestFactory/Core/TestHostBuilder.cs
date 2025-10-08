@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -33,6 +32,10 @@ public class TestHostBuilder<TStartup> : WebApplicationFactory<TStartup> where T
             ConfigureLocalHost();
         }
     }
+
+    /// <summary>
+    /// Gets or sets the host builder used to configure and create the application's host.
+    /// </summary>
     public HostBuilder HostBuilder { get; set; }
 
     public bool IsDebugMode { get; set; }
@@ -128,7 +131,7 @@ public class TestHostBuilder<TStartup> : WebApplicationFactory<TStartup> where T
             ConfigureMoqWebApplicationOptions(services, context.Configuration);
             ConfigureMoqHttpContext(services);
             services.ConfigureEnvironments(context.Configuration);
-            services.ConfigureSettings(context.Configuration);
+            //services.ConfigureSettings(context.Configuration);
             services.ConfigureCache(context.Configuration);
             //services.ConfigureSwagger(context.Configuration);
             //services.ConfigureLogging(context.Configuration);

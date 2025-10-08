@@ -2,7 +2,6 @@ using Confluent.Kafka;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using System.Reflection;
 
 namespace Custom.Framework.Kafka
 {
@@ -14,7 +13,6 @@ namespace Custom.Framework.Kafka
         /// </summary>
         public static IServiceCollection AddKafka(this IServiceCollection services, IConfiguration configuration)
         {
-            var assemblyName = Assembly.GetEntryAssembly()?.GetName().Name;
             var kafkaSection = configuration.GetSection("Kafka");
             services.AddSingleton<IValidateOptions<KafkaOptions>, KafkaOptionsValidator>();
             services.AddOptions<KafkaOptions>("Kafka").Bind(kafkaSection);
