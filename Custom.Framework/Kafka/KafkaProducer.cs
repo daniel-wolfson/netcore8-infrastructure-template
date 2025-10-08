@@ -1,6 +1,13 @@
 using Confluent.Kafka;
-using Newtonsoft.Json;
+using Custom.Domain.Optima.Models.Main;
+using Custom.Framework.Helpers;
+using Google.Protobuf;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using System.Diagnostics;
+using System.Text.Json;
+using System.Threading.Tasks;
+using static Confluent.Kafka.ConfigPropertyNames;
 
 namespace Custom.Framework.Kafka
 {
@@ -8,61 +15,77 @@ namespace Custom.Framework.Kafka
     /// Generic Kafka producer implementation that handles publishing messages to Kafka topics
     /// with support for metrics, distributed tracing, batch operations and delivery guarantees.
     /// </summary>
-    public class KafkaProducer<TMessage> : IKafkaProducer<TMessage>, IDisposable
+    public class KafkaProducer : IKafkaProducer, IDisposable
     {
         private readonly ILogger _logger;
-        private readonly ProducerSettings _settings;
         private readonly KafkaMetrics _metrics;
+        private readonly KafkaOptions _options;
         private readonly ActivitySource _activitySource;
-        private readonly IProducer<string, string> _producer;
-        private readonly SemaphoreSlim _producerLock = new(1, 1);
-        private readonly IProducer<string, string>? _transactionalProducer;
+        private bool _disposed;
+
+        private readonly IProducer<string, byte[]> _producer;
+        private readonly IProducer<string, byte[]>? _transactionalProducer;
         private readonly IProducerDeliveryStrategy _deliveryStrategy;
+        public string[] Topics => [.. _options.Producers.SelectMany(x => x.Topics)];
 
-        public KafkaProducer(ProducerSettings settings, ILogger logger, IProducerDeliveryStrategy? deliveryStrategy = null)
+        public KafkaProducer(string producerName, KafkaOptions options, 
+            IProducerDeliveryStrategy deliveryStrategy, ILogger logger)
         {
-            _settings = settings;
             _logger = logger;
-            _metrics = new KafkaMetrics(settings.ClientId);
-            _activitySource = new ActivitySource("Kafka.Producer");
+            _options = options;
+            var clientId = !string.IsNullOrEmpty(producerName)
+                ? $"{_options.Common.ServiceShortName}-{producerName}-producer"
+                : $"{_options.Common.ServiceShortName}-producer";
+            _metrics = new KafkaMetrics(clientId);
+            _activitySource = new ActivitySource(nameof(KafkaProducer));
 
-            // initialize strategy early so CreateProducerConfig can use it
-            _deliveryStrategy = deliveryStrategy ?? DeliveryStrategyFactory.CreateProducerStrategy(_settings.DeliverySemantics, _settings);
+            var deliverySemantics = _options.Producers
+                .FirstOrDefault(p => p.Name.Equals(producerName, StringComparison.OrdinalIgnoreCase))
+                ?.DeliverySemantics ?? DeliverySemantics.AtLeastOnce;
 
-            var config = CreateProducerConfig();
-            _producer = CreateProducer(config);
+            var producerSettings = _options.Producers
+                .FirstOrDefault(p => p.Name.Equals(producerName, StringComparison.OrdinalIgnoreCase))
+                ?? throw new ArgumentException($"Producer settings not found for name: {producerName}");
+
+            _deliveryStrategy = deliveryStrategy
+                ?? DeliveryStrategyFactory.CreateProducerStrategy(deliverySemantics, producerSettings);
+
+            _producer = CreateProducer(_deliveryStrategy.ProducerConfig);
 
             if (_deliveryStrategy.RequiresTransactionalProducer)
             {
-                var transactionalConfig = CreateTransactionalProducerConfig();
+                var transactionalConfig = CreateTransactionalProducerConfig(producerName, clientId, producerSettings);
                 _transactionalProducer = CreateProducer(transactionalConfig);
             }
         }
 
         /// <summary>
-        /// Produces a single message to a Kafka topic with configurable delivery semantics, tracing and metrics.
+        /// Produces a single producerMessage to a Kafka topic with configurable delivery semantics, tracing and metrics.
         /// </summary>
-        public async Task ProduceAsync(string topic, TMessage message, string? key = null, string? correlationId = null, CancellationToken cancellationToken = default)
+        public async Task PublishAsync<TMessage>(string topic, TMessage message, CancellationToken cancellationToken = default)
         {
-            using var activity = _activitySource.StartActivity("KafkaProducer.Produce");
-            var stopwatch = DateTime.Now.Ticks;
+            Activity? activity = null;
+            long stopwatch = DateTime.Now.Ticks;
+
+            var settings = _options.Producers.FirstOrDefault(x => x.Topics.Contains(topic))
+                ?? throw new ArgumentException($"Topic '{topic}' is not configured for any producer.");
 
             try
             {
-                await _producerLock.WaitAsync(cancellationToken);
+                activity = _activitySource.StartActivity("KafkaProducer.Produce");
 
-                var value = JsonConvert.SerializeObject(message);
-                var headers = CreateMessageHeaders(correlationId);
-
-                var msg = new Message<string, string>
+                var messageKey = Guid.NewGuid().ToString();
+                var producerMessage = new Message<string, byte[]>
                 {
-                    Key = key ?? Guid.NewGuid().ToString(),
-                    Value = value,
-                    Headers = headers
+                    Key = messageKey,
+                    Headers = CreateMessageHeaders(settings, Guid.NewGuid().ToString(), messageKey),
+                    Value = JsonSerializer.SerializeToUtf8Bytes(message)
                 };
 
                 // Use strategy to produce (no switch-case)
-                var delivery = await _deliveryStrategy.ProduceAsync(_producer, _transactionalProducer, topic, msg, cancellationToken).ConfigureAwait(false);
+                var delivery = await _deliveryStrategy.PublishAsync(
+                    topic, producerMessage, _producer, _transactionalProducer, cancellationToken)
+                    .ConfigureAwait(false);
 
                 RecordMetrics(TimeSpan.FromTicks(DateTime.Now.Ticks - stopwatch), delivery, activity);
             }
@@ -71,58 +94,120 @@ namespace Custom.Framework.Kafka
                 HandleProduceException(ex, topic, activity);
                 throw;
             }
-            finally
+        }
+
+        /// <summary>
+        /// Publishes a batch of messages asynchronously to the specified topic.
+        /// Each message is sent individually to avoid creating JSON arrays.
+        /// </summary>
+        public async Task PublishAllAsync<TMessage>(string topic, IEnumerable<TMessage> messages, CancellationToken cancellationToken = default)
+        {
+            var publishTasks = new List<Task>();
+            foreach (var message in messages)
             {
-                _producerLock.Release();
+                publishTasks.Add(PublishAsync(topic, message, cancellationToken));
+            }
+            await Task.WhenAll(publishTasks).ConfigureAwait(false);
+
+            int successCount = 0;
+            int failureCount = 0;
+
+            foreach (var task in publishTasks)
+            {
+                if (task.IsFaulted)
+                {
+                    failureCount++;
+                    _logger.Error(task.Exception, "{Title} Individual message publish failed", ApiHelper.LogTitle());
+                }
+                else if (task.IsCompletedSuccessfully)
+                {
+                    successCount++;
+                }
+            }
+
+            _logger.Information("{Title} Batch publish completed. {SuccessCount} successful, {FailureCount} failed",
+                ApiHelper.LogTitle(), successCount, failureCount);
+        }
+
+        public async Task PublishToDeadLettersAsync<TMessage>(string topic,
+            TMessage message,
+            Exception? exception = null,
+            int attemptCount = 1,
+            CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                // Create dead letter deliveryResultSource with error context
+                //var deadLetterPayload = CreateDeadLetterMessage(deliveryResultSource, exception, attemptCount);
+
+                // Preserve original key for partitioning consistency
+                //var originalMessage = message;
+                //var dlq_mssage = new Message<string, byte[]>
+                //{
+                //    Key = originalMessage.Key,
+                //    Value = originalMessage.Value,
+                //    Headers = CreateDeadLetterHeaders(originalMessage, exception, attemptCount)
+                //};
+
+                //var deliveryResult2 = await _producer.ProduceAsync(topic, originalMessage, cancellationToken);
+
+                //_logger.Information("Message published to DLQ: Name={DlqTopic} Partition={Partition} Offset={Offset} OriginalTopic={OriginalTopic}",
+                //    topic, deliveryResultSource.Partition.Value, deliveryResultSource.Offset.Value, topic);
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, $"{ApiHelper.LogTitle()} Failed to publish to dead letter", topic);
+                // Don't rethrow - DLQ failure shouldn't stop deliveryResultSource processing
             }
         }
 
         /// <summary>
         /// Produces multiple messages to a Kafka topic in batch with configurable delivery semantics, tracing and metrics.
         /// </summary>
-        public async Task ProduceBatchAsync(
-            string topic,
-            IEnumerable<(TMessage Message, string? Key)> messages,
-            string? correlationId = null,
-            CancellationToken cancellationToken = default)
+        public async Task PublishBatchAsync<TMessage>(string topic, IEnumerable<TMessage> messages, CancellationToken cancellationToken = default)
         {
             using var activity = _activitySource.StartActivity("KafkaProducer.ProduceBatch");
-            var stopwatch = Stopwatch.StartNew();
+            var stopwatchTicks = DateTimeOffset.UtcNow.Ticks;
+            ProducerSettings? settings;
+            if (_options.Producers.Exists(x => x.Topics.Contains(topic)))
+            {
+                settings = _options.Producers.FirstOrDefault(x => x.Topics.Contains(topic));
+            }
+            else
+            {
+                throw new ArgumentException($"Topic '{topic}' is not configured for any producer.");
+            }
 
             try
             {
-                await _producerLock.WaitAsync(cancellationToken);
-
-                var tasks = new List<Task<DeliveryResult<string, string>>>();
-                foreach (var (message, key) in messages)
+                var tasks = new List<Task<DeliveryResult<string, byte[]>>>();
+                var correlationId = Guid.NewGuid().ToString();
+                var messageKey = Guid.NewGuid().ToString();
+                var headers = CreateMessageHeaders(settings, correlationId, messageKey);
+                var publishMessage = new Message<string, byte[]>
                 {
-                    var value = JsonConvert.SerializeObject(message);
-                    var headers = CreateMessageHeaders(correlationId);
-                    var msg = new Message<string, string>
-                    {
-                        Key = key ?? Guid.NewGuid().ToString(),
-                        Value = value,
-                        Headers = headers
-                    };
+                    Key = messageKey,
+                    Value = JsonSerializer.SerializeToUtf8Bytes(messages),
+                    Headers = headers
+                };
 
-                    // delegate to strategy for each message
-                    tasks.Add(_deliveryStrategy.ProduceAsync(_producer, _transactionalProducer, topic, msg, cancellationToken));
-                }
+                // delegate to strategy for each producerMessage
+                tasks.Add(
+                    _deliveryStrategy.PublishAsync(topic, publishMessage,
+                        _producer, _transactionalProducer, cancellationToken));
 
                 var results = await Task.WhenAll(tasks).ConfigureAwait(false);
                 foreach (var delivery in results)
                 {
-                    RecordMetrics(stopwatch.Elapsed, delivery, activity);
+                    RecordMetrics(
+                        TimeSpan.FromTicks(DateTimeOffset.UtcNow.Ticks - stopwatchTicks),
+                        delivery, activity);
                 }
             }
             catch (Exception ex)
             {
                 HandleProduceException(ex, topic, activity);
                 throw;
-            }
-            finally
-            {
-                _producerLock.Release();
             }
         }
 
@@ -137,9 +222,11 @@ namespace Custom.Framework.Kafka
 
         public void Dispose()
         {
+            if (_disposed) return;
+            _disposed = true;
+
             try
             {
-                _producerLock.Dispose();
                 _producer.Flush(TimeSpan.FromSeconds(5));
                 _producer.Dispose();
 
@@ -157,56 +244,22 @@ namespace Custom.Framework.Kafka
 
         #region private methods
 
-        private ProducerConfig CreateProducerConfig()
+        private ProducerConfig CreateTransactionalProducerConfig(
+            string producerName, string clientId, ProducerSettings producerSettings)
         {
-            var config = new ProducerConfig
-            {
-                BootstrapServers = _settings.BootstrapServers,
-                ClientId = _settings.ClientId,
-                LingerMs = _settings.LingerMs,
-                BatchSize = _settings.BatchSize,
-                MessageMaxBytes = _settings.MessageMaxBytes,
-                CompressionType = (CompressionType)Enum.Parse(typeof(CompressionType), _settings.CompressionType ?? "None"),
-                CompressionLevel = _settings.CompressionLevel,
-                RetryBackoffMs = (int)_settings.RetryBackoffMs.TotalMilliseconds,
-            };
-
-            // Let the strategy configure delivery-specific producer settings
-            _deliveryStrategy.ConfigureProducerConfig(config, _settings);
-            ConfigureSecurity(config);
-
-            if (_settings.ProducerConfig != null)
-            {
-                foreach (var kv in _settings.ProducerConfig)
-                    config.Set(kv.Key, kv.Value);
-            }
-
-            return config;
-        }
-
-        private ProducerConfig CreateTransactionalProducerConfig()
-        {
-            var config = CreateProducerConfig();
-            config.TransactionalId = $"{_settings.ClientId}-{Guid.NewGuid()}";
-            config.TransactionTimeoutMs = _settings.TransactionTimeoutMs ?? 60000;
+            var config = _deliveryStrategy.ProducerConfig;
+            config.TransactionalId = $"{clientId}-{Guid.NewGuid()}";
+            config.TransactionTimeoutMs = producerSettings.TransactionTimeoutMs
+                ?? Timeouts.TransactionTimeoutMs.Milliseconds;
             config.EnableIdempotence = true;
             return config;
         }
 
-        private void ConfigureSecurity(ProducerConfig config)
+        private IProducer<string, byte[]> CreateProducer(ProducerConfig config)
         {
-            if (!string.IsNullOrEmpty(_settings.SaslUsername))
-            {
-                config.SaslUsername = _settings.SaslUsername;
-                config.SaslPassword = _settings.SaslPassword;
-                config.SaslMechanism = (SaslMechanism)Enum.Parse(typeof(SaslMechanism), _settings.SaslMechanism ?? "Plain");
-                config.SecurityProtocol = (SecurityProtocol)Enum.Parse(typeof(SecurityProtocol), _settings.SecurityProtocol ?? "SaslSsl");
-            }
-        }
-
-        private IProducer<string, string> CreateProducer(ProducerConfig config)
-        {
-            return new ProducerBuilder<string, string>(config)
+            //var config = CreateProducerConfig(settings);
+            return new ProducerBuilder<string, byte[]>(config)
+                //.SetValueSerializer(new KafkaMessageSerializer<TMessage>())
                 .SetErrorHandler((_, e) =>
                 {
                     _metrics.RecordError();
@@ -215,13 +268,13 @@ namespace Custom.Framework.Kafka
                 .SetLogHandler((_, m) => _logger.Debug("Kafka Producer log: {Facility} {Message}", m.Facility, m.Message))
                 .SetStatisticsHandler((_, json) =>
                 {
-                    if (_settings.EnableMetrics)
-                        _logger.Debug("Kafka Producer stats: {Stats}", json);
+                    //if (_kafkaOptions.EnableMetrics)
+                    //_logger.Debug("Kafka Producer stats: {Stats}", json);
                 })
                 .Build();
         }
 
-        private Headers CreateMessageHeaders(string? correlationId)
+        private Headers CreateMessageHeaders(ProducerSettings settings, string? correlationId, string? messageKey = null)
         {
             var headers = new Headers();
 
@@ -237,10 +290,22 @@ namespace Custom.Framework.Kafka
             // Add timestamp for monitoring
             headers.Add("produced-at", System.Text.Encoding.UTF8.GetBytes(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString()));
 
+            // Add duplicate detection support if enabled
+            if (settings.EnableDuplicateDetection)
+            {
+                // Use message key + timestamp as idempotence key for duplicate detection
+                var idempotenceKey = !string.IsNullOrEmpty(messageKey)
+                    ? $"{messageKey}-{DateTimeOffset.UtcNow.Ticks}"
+                    : Guid.NewGuid().ToString();
+
+                headers.Add("idempotence-key", System.Text.Encoding.UTF8.GetBytes(idempotenceKey));
+                headers.Add("message-id", System.Text.Encoding.UTF8.GetBytes(Guid.NewGuid().ToString()));
+            }
+
             return headers;
         }
 
-        private void RecordMetrics(TimeSpan elapsed, DeliveryResult<string, string> delivery, Activity? activity)
+        private void RecordMetrics(TimeSpan elapsed, DeliveryResult<string, byte[]> delivery, Activity? activity)
         {
             _metrics.RecordMessageSent();
             _metrics.RecordProducerLatency(elapsed);
@@ -252,7 +317,7 @@ namespace Custom.Framework.Kafka
             activity?.SetTag("deliveryLatencyMs", elapsed.TotalMilliseconds);
 
             _logger.Information(
-                "Produced message to {TopicPartitionOffset} | Key: {Key} | Latency: {Latency}ms",
+                "Produced producerMessage to {TopicPartitionOffset} | Key: {Key} | Latency: {Latency}ms",
                 delivery.TopicPartitionOffset, delivery.Message.Key, elapsed.TotalMilliseconds);
         }
 
@@ -264,13 +329,60 @@ namespace Custom.Framework.Kafka
             if (ex is ProduceException<string, string> produceEx)
             {
                 _logger.Error(produceEx,
-                    "Failed to produce message to topic {Topic}. Error: {Error} | IsFatal: {IsFatal}",
+                    "Failed to produce producerMessage to topic {Name}. Error: {Error} | IsFatal: {IsFatal}",
                     topic, produceEx.Error.Reason, produceEx.Error.IsFatal);
             }
             else
             {
-                _logger.Error(ex, "Unexpected error producing message to topic {Topic}", topic);
+                _logger.Error(ex, "Unexpected error producing producerMessage to topic {Name}", topic);
             }
+        }
+
+        private KafkaDeadLetterMessage<byte[]> CreateDeadLetterMessage(ConsumeResult<string, byte[]> result, Exception? exception, int attemptCount)
+        {
+            return new KafkaDeadLetterMessage<byte[]>
+            {
+                OriginalTopic = result.Topic,
+                OriginalPartition = result.Partition.Value,
+                OriginalOffset = result.Offset.Value,
+                OriginalKey = result.Message.Key,
+                //OriginalValue = result.Message.Value,
+                OriginalTimestamp = result.Message.Timestamp.UtcDateTime,
+                FailureInfo = exception != null
+                    ? new FailureInfo
+                    {
+                        ErrorType = exception?.GetType().Name ?? string.Empty,
+                        ErrorMessage = exception?.Message ?? string.Empty,
+                        StackTrace = exception?.StackTrace ?? string.Empty,
+                        AttemptCount = attemptCount,
+                        FailedAt = DateTime.UtcNow
+                    }
+                    : null
+            };
+        }
+
+        private Headers CreateDeadLetterHeaders(Message<string, byte[]> originalMessage, Exception? exception, int attemptCount)
+        {
+            var headers = new Headers();
+
+            // Copy original headers
+            if (originalMessage.Headers != null)
+            {
+                foreach (var header in originalMessage.Headers)
+                {
+                    headers.Add($"dlq-original-{header.Key}", header.GetValueBytes());
+                }
+            }
+
+            // Add DLQ-specific headers
+            //headers.Add("dlq-original-topic", System.Text.Encoding.UTF8.GetBytes(originalMessage.Name));
+            //headers.Add("dlq-original-partition", BitConverter.GetBytes(originalMessage.Partition.Value));
+            //headers.Add("dlq-original-offset", BitConverter.GetBytes(originalMessage.Offset.Value));
+            headers.Add("dlq-error-type", System.Text.Encoding.UTF8.GetBytes(exception?.GetType().Name ?? ""));
+            headers.Add("dlq-attempt-count", BitConverter.GetBytes(attemptCount));
+            headers.Add("dlq-failed-at", BitConverter.GetBytes(DateTime.UtcNow.ToBinary()));
+
+            return headers;
         }
 
         #endregion private methods

@@ -1,24 +1,55 @@
+using Confluent.Kafka;
+
 namespace Custom.Framework.Kafka
 {
     /// <summary>
     /// Interface for producing messages to Kafka topics
     /// </summary>
-    /// <typeparam name="TMessage">The type of message to be produced</typeparam>
-    public interface IKafkaProducer<TMessage>
+    public interface IKafkaProducer : IDisposable
     {
+        string[] Topics { get; }
+
         /// <summary>
         /// Produces a single message to a Kafka topic
         /// </summary>
-        Task ProduceAsync(string topic, TMessage message, string? key = null, string? correlationId = null, CancellationToken cancellationToken = default);
+        Task PublishAsync<TMessage>(string topic, TMessage message, CancellationToken cancellationToken = default);
+
+        Task PublishAllAsync<TMessage>(string topic, IEnumerable<TMessage> messages, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Produces multiple messages to a Kafka topic in batch
         /// </summary>
-        Task ProduceBatchAsync(string topic, IEnumerable<(TMessage Message, string? Key)> messages, string? correlationId = null, CancellationToken cancellationToken = default);
+        Task PublishBatchAsync<TMessage>(string topic, IEnumerable<TMessage> messages, CancellationToken cancellationToken = default);
+
+        Task PublishToDeadLettersAsync<TMessage>(string topic, TMessage message,
+            Exception? exception = null, int attemptCount = 1, CancellationToken cancellationToken = default);
 
         /// <summary>
         /// Flushes any pending messages
         /// </summary>
         Task FlushAsync(TimeSpan timeout);
     }
+
+    public interface IKafkaProducer<TMessage>
+    {
+        /// <summary>
+        /// Produces a single message to a Kafka topic
+        /// </summary>
+        Task PublishAsync(TMessage message, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Produces multiple messages to a Kafka topic in batch
+        /// </summary>
+        Task PublishBatchAsync(string topic, IEnumerable<TMessage> messages, CancellationToken cancellationToken = default);
+
+        Task PublishToDeadLetterAsync(string topic, ConsumeResult<string, TMessage> deliveryResultSource,
+            Exception? exception = null, int attemptCount = 1, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// Flushes any pending messages
+        /// </summary>
+        Task FlushAsync(TimeSpan timeout);
+    }
+
+
 }

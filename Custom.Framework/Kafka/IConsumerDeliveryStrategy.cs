@@ -5,7 +5,8 @@ namespace Custom.Framework.Kafka
     // Consumer strategy interface
     public interface IConsumerDeliveryStrategy
     {
-        void ConfigureConsumerConfig(ConsumerConfig config, ConsumerSettings settings);
-        Task HandleAfterProcessAsync(IConsumer<string, string> consumer, ConsumeResult<string, string> result);
+        public void HandleAfterProcess(IConsumer<string, byte[]> consumer, ConsumeResult<string, byte[]> result);
+
+        public ConsumerConfig ConsumerConfig { get; }
     }
 }
