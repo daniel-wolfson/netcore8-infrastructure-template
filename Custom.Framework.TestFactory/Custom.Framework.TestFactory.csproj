@@ -9,7 +9,7 @@
     <AssemblyVersion>8.1.8.0</AssemblyVersion>
     <FileVersion>8.1.8.0</FileVersion>
     <Version>8.1.8</Version>
-    <GenerateDocumentationFile>True</GenerateDocumentationFile>
+    <GenerateDocumentationFile>False</GenerateDocumentationFile>
     <TargetFrameworks>net8.0</TargetFrameworks>
     <TargetFramework>net8.0</TargetFramework>
     <AssemblyName>Isrotel.Framework.TestFactory</AssemblyName>

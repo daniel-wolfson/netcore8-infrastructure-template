@@ -1,12 +1,7 @@
-using Amazon;
 using Amazon.DynamoDBv2;
 using Amazon.DynamoDBv2.Model;
 using Custom.Framework.Aws.DynamoDB;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using System.Diagnostics;
-using Xunit;
 using Xunit.Abstractions;
 
 namespace Custom.Framework.Tests;

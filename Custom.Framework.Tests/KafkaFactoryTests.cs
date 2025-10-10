@@ -23,7 +23,7 @@ namespace Custom.Framework.Tests
         public KafkaFactoryTests(ITestOutputHelper output)
         {
             _output = output;
-            _logger = Log.Logger = new TestLoggerWrapper(_output);
+            _logger = Log.Logger = new TestHostLogger(_output);
 
             _factory = new WebApplicationFactory<TestProgram>()
                 .WithWebHostBuilder(builder =>

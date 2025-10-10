@@ -20,7 +20,7 @@ namespace Custom.Framework.Tests
     /// </summary>
     public class KafkaTests(ITestOutputHelper output) : IAsyncLifetime
     {
-        private readonly ILogger _logger = Log.Logger = new TestLoggerWrapper(output);
+        private readonly ILogger _logger = Log.Logger = new TestHostLogger(output);
         private readonly List<IDisposable> _disposables = [];
         private KafkaOptions _settings = default!;
         private IKafkaProducer _producer = default!;
@@ -41,7 +41,7 @@ namespace Custom.Framework.Tests
                     builder.ConfigureServices((context, services) =>
                         ConfigureServices(context, services));
                     builder.ConfigureTestServices(services =>
-                        services.AddSingleton<ILogger>(new TestLoggerWrapper(output)));
+                        services.AddSingleton<ILogger>(new TestHostLogger(output)));
                 });
 
             _settings = _factory.Services

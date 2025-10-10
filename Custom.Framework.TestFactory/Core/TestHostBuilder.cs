@@ -13,12 +13,9 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using Moq;
+using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace Custom.Framework.TestFactory.Core;
-
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 
 public class TestHostBuilder<TStartup> : WebApplicationFactory<TStartup> where TStartup : class
 {
@@ -100,7 +97,7 @@ public class TestHostBuilder<TStartup> : WebApplicationFactory<TStartup> where T
         return webHost =>
         {
             //webHost.UseTestServer();
-            webHost.UseStartup<TestStartup>();
+            webHost.UseStartup<TestHostStartup>();
         };
     }
 
@@ -279,7 +276,7 @@ public class TestHostBuilder
         builder.ConfigureWebHost(webHost =>
         {
             //webHost.UseTestServer();
-            webHost.UseStartup<TestStartup>();
+            webHost.UseStartup<TestHostStartup>();
         });
 
         IHost host = builder.Start();
