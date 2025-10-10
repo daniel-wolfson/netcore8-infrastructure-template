@@ -1,0 +1,150 @@
+{
+  "DynamoDB": {
+    "// Region": "AWS region where DynamoDB tables are located",
+    "Region": "us-east-1",
+    
+    "// AccessKey": "AWS Access Key (optional if using IAM roles/instance profiles)",
+    "AccessKey": null,
+    
+    "// SecretKey": "AWS Secret Key (optional if using IAM roles/instance profiles)",
+    "SecretKey": null,
+    
+    "// ServiceUrl": "Custom endpoint for local DynamoDB (leave null for AWS)",
+    "ServiceUrl": null,
+    
+    "// TableName": "Default table name for operations",
+    "TableName": "DefaultTable",
+    
+    "// EnableBatchProcessing": "Enable batch operations for better performance",
+    "EnableBatchProcessing": true,
+    
+    "// MaxBatchSize": "Maximum items per batch (DynamoDB limit is 25 for writes, 100 for reads)",
+    "MaxBatchSize": 25,
+    
+    "// MaxRetries": "Number of automatic retries for failed operations",
+    "MaxRetries": 3,
+    
+    "// TimeoutSeconds": "Request timeout in seconds",
+    "TimeoutSeconds": 30,
+    
+    "// EnableMetrics": "Enable CloudWatch metrics collection",
+    "EnableMetrics": true,
+    
+    "// ReadCapacityUnits": "Provisioned read capacity (only used if UseOnDemandBilling=false)",
+    "ReadCapacityUnits": 5,
+    
+    "// WriteCapacityUnits": "Provisioned write capacity (only used if UseOnDemandBilling=false)",
+    "WriteCapacityUnits": 5,
+    
+    "// UseOnDemandBilling": "Use on-demand billing mode (recommended for high-load scenarios)",
+    "UseOnDemandBilling": true
+  },
+
+  "// Example configurations for different environments": "",
+  
+  "DynamoDB:Production": {
+    "Region": "us-east-1",
+    "TableName": "prod-user-sessions",
+    "UseOnDemandBilling": true,
+    "EnableMetrics": true,
+    "MaxRetries": 5,
+    "TimeoutSeconds": 60
+  },
+
+  "DynamoDB:Staging": {
+    "Region": "us-west-2",
+    "TableName": "staging-user-sessions",
+    "UseOnDemandBilling": true,
+    "EnableMetrics": true,
+    "MaxRetries": 3,
+    "TimeoutSeconds": 30
+  },
+
+  "DynamoDB:Development": {
+    "Region": "us-east-1",
+    "ServiceUrl": "http://localhost:8000",
+    "AccessKey": "fakeAccessKey",
+    "SecretKey": "fakeSecretKey",
+    "TableName": "dev-user-sessions",
+    "UseOnDemandBilling": true,
+    "MaxRetries": 1,
+    "TimeoutSeconds": 10
+  },
+
+  "// Sample table configurations": "",
+  
+  "Tables": {
+    "UserSessions": {
+      "TableName": "UserSessions",
+      "PartitionKey": "UserId",
+      "SortKey": "SessionId",
+      "TTL": "ExpiresAt",
+      "Description": "User authentication sessions with 24-hour expiration"
+    },
+    
+    "Events": {
+      "TableName": "Events",
+      "PartitionKey": "EventType",
+      "SortKey": "TimestampEventId",
+      "TTL": "ExpiresAt",
+      "Description": "Real-time event tracking with 30-day retention",
+      "GlobalSecondaryIndexes": [
+        {
+          "IndexName": "UserIdIndex",
+          "PartitionKey": "UserId",
+          "SortKey": "Timestamp"
+        }
+      ]
+    },
+    
+    "ProductInventory": {
+      "TableName": "ProductInventory",
+      "PartitionKey": "ProductSku",
+      "SortKey": "WarehouseId",
+      "Description": "Product inventory across multiple warehouses",
+      "VersionAttribute": "Version",
+      "GlobalSecondaryIndexes": [
+        {
+          "IndexName": "CategoryIndex",
+          "PartitionKey": "Category",
+          "SortKey": "ProductSku"
+        }
+      ]
+    }
+  },
+
+  "// Performance tuning recommendations": "",
+  "PerformanceTuning": {
+    "BatchSize": {
+      "Writes": 25,
+      "Reads": 100,
+      "Note": "DynamoDB limits: 25 items for writes, 100 items for reads"
+    },
+    "Throughput": {
+      "OnDemand": {
+        "Description": "Automatically scales with traffic",
+        "DefaultReadCapacity": "Up to 40,000 RCU",
+        "DefaultWriteCapacity": "Up to 40,000 WCU",
+        "Recommended": "High-traffic applications with unpredictable load"
+      },
+      "Provisioned": {
+        "Description": "Fixed capacity with auto-scaling",
+        "MinReadCapacity": 1,
+        "MaxReadCapacity": 40000,
+        "MinWriteCapacity": 1,
+        "MaxWriteCapacity": 40000,
+        "Recommended": "Predictable traffic patterns"
+      }
+    },
+    "TTL": {
+      "Description": "Time To Live for automatic data expiration",
+      "Attribute": "ExpiresAt",
+      "Format": "Unix timestamp (seconds since epoch)",
+      "Examples": {
+        "24Hours": "DateTimeOffset.UtcNow.AddHours(24).ToUnixTimeSeconds()",
+        "30Days": "DateTimeOffset.UtcNow.AddDays(30).ToUnixTimeSeconds()",
+        "1Year": "DateTimeOffset.UtcNow.AddYears(1).ToUnixTimeSeconds()"
+      }
+    }
+  }
+}
