@@ -8,32 +8,24 @@ using Microsoft.Extensions.Hosting;
 
 namespace Custom.Framework.TestFactory.Core;
 
-public class TestStartup
+public class TestHostStartup(IConfiguration configuration)
 {
-    public IConfiguration Configuration
-    {
-        get;
-    }
-
-    public TestStartup(IConfiguration configuration)
-    {
-        Configuration = configuration;
-    }
+    public IConfiguration Configuration { get; } = configuration;
 
     public void ConfigureAppConfiguration(ConfigurationManager configuration, IWebHostEnvironment env)
     {
-
     }
+
     public void ConfigureServices(IServiceCollection services)
     {
-
     }
+
     public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
     {
         app.UseMiddleware<ApiExceptionMiddleware>();
         app.Run(async context =>
         {
-            await context.Response.WriteAsync("Hello from TestStartup!");
+            await context.Response.WriteAsync("Hello from TestHostStartup!");
         });
     }
 }

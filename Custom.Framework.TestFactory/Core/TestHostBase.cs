@@ -64,7 +64,7 @@ public class TestHostBase : IDisposable
 
         testHostBuilder.ConfigureServices((context, services) =>
         {
-            var logger = new TestLoggerWrapper(_output);
+            var logger = new TestHostLogger(_output);
             services.Replace(new ServiceDescriptor(typeof(ILogger), logger, ServiceLifetime.Singleton));
             services.AddSingleton<ILogger>(provider => logger);
             onConfigureServices?.Invoke(context, services);

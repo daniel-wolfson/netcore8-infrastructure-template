@@ -31,7 +31,7 @@ namespace Custom.Framework.Tests
               {
                   builder.ConfigureServices((context, services) => ConfigureServices(services));
                   builder.ConfigureTestServices(services =>
-                        services.AddSingleton<ILogger>(new TestLoggerWrapper(output)));
+                        services.AddSingleton<ILogger>(new TestHostLogger(output)));
                   builder.Configure(app => ConfigureApp(app));
               });
 

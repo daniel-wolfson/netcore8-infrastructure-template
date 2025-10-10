@@ -2,8 +2,6 @@
 using Custom.Framework.Contracts;
 using Custom.Framework.Helpers;
 using Custom.Framework.Models;
-using Custom.Framework.Models.Base;
-using Custom.Framework.StaticData;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.AspNetCore.Http.Features;
@@ -13,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Primitives;
 using Serilog;
 using System.IdentityModel.Tokens.Jwt;
+using System.Net;
 using System.Security.Claims;
 using System.Text.RegularExpressions;
 
@@ -161,7 +160,7 @@ namespace Custom.Framework.Extensions
         {
             // memorCacheTTL - default 10 min., it must be redefine
             // from httpContext.Items or httpContext.Request.Query
-            int memorCacheTTL = 0;  
+            int memorCacheTTL = 0;
             try
             {
                 if (httpContext != null)
@@ -345,6 +344,18 @@ namespace Custom.Framework.Extensions
             serviceResult.RequestUrl = requestMessage?.RequestUri?.ToString() ?? "";
             serviceResult.RequestData = data;
             return serviceResult;
+        }
+
+        public static void SetServiceProvider(IServiceProvider services)
+        {
+            ServicePointManager.ServerCertificateValidationCallback +=
+                delegate (object sender,
+                    System.Security.Cryptography.X509Certificates.X509Certificate? certificate,
+                    System.Security.Cryptography.X509Certificates.X509Chain? chain,
+                    System.Net.Security.SslPolicyErrors sslPolicyErrors)
+                {
+                    return true; // **** Always accept
+                };
         }
     }
 }

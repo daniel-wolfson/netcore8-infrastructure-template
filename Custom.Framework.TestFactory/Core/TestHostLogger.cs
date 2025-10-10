@@ -1,6 +1,4 @@
-﻿using Custom.Framework.Helpers;
-using Microsoft.AspNetCore.Http.HttpResults;
-using Serilog;
+﻿using Serilog;
 using Serilog.Events;
 using Serilog.Parsing;
 using System.Text;
@@ -8,8 +6,8 @@ using Xunit.Abstractions;
 
 namespace Custom.Framework.TestFactory.Core
 {
-    /// <summary> TestLoggerWrapper </summary>
-    public class TestLoggerWrapper : ILogger
+    /// <summary> TestHostLogger </summary>
+    public class TestHostLogger : ILogger
     {
         // delegate for output on Console or XUnitOutput
         private delegate void OutputWriterDelegate(string templateMessage, params object?[]? args);
@@ -19,13 +17,13 @@ namespace Custom.Framework.TestFactory.Core
         private readonly LogEventLevel[]? _outputSeverities = null;
 
         /// <summary> ctor </summary>
-        public TestLoggerWrapper()
+        public TestHostLogger()
         {
             _outputWriter = Console.WriteLine;
         }
 
         /// <summary> ctor </summary>
-        public TestLoggerWrapper(ITestOutputHelper? output) //, LogEventLevel[]? outputSeverities
+        public TestHostLogger(ITestOutputHelper? output) //, LogEventLevel[]? outputSeverities
         {
             _outputWriter = output != null ? output.WriteLine : Console.WriteLine;
 
@@ -110,7 +108,7 @@ namespace Custom.Framework.TestFactory.Core
                 }
                 catch (Exception ex)
                 {
-                    _outputWriter($"{_outputWriterTitle} TestLoggerWrapper.Log error: {ex.Message}");
+                    _outputWriter($"{_outputWriterTitle} TestHostLogger.Log error: {ex.Message}");
                 }
             }
         }
