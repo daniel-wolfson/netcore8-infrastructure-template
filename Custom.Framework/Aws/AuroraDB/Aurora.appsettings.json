@@ -1,0 +1,25 @@
+{
+  "AuroraDB": {
+    "Engine": "PostgreSQL",
+    "WriteEndpoint": "your-cluster.cluster-xxxxx.us-east-1.rds.amazonaws.com",
+    "ReadEndpoint": "your-cluster.cluster-ro-xxxxx.us-east-1.rds.amazonaws.com",
+    "Database": "your_database",
+    "Username": "admin",
+    "Password": "your_password",
+    "Port": 5432,
+    "MaxPoolSize": 100,
+    "MinPoolSize": 10,
+    "ConnectionTimeout": 30,
+    "CommandTimeout": 60,
+    "EnableRetryOnFailure": true,
+    "MaxRetryCount": 3,
+    "MaxRetryDelay": 30,
+    "EnableSensitiveDataLogging": false,
+    "EnableDetailedErrors": false,
+    "EnableReadReplicas": true,
+    "UseSSL": true,
+    "SSLMode": "Require",
+    "UseIAMAuthentication": false,
+    "Region": "us-east-1"
+  }
+}
