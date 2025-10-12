@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.TestHost;
 using System.Net;
 using Xunit.Abstractions;
 
-namespace Custom.Framework.Tests;
+namespace Custom.Framework.Tests.Monitoring.Prometheus;
 
 /// <summary>
 /// Integration tests for Prometheus metrics implementation

@@ -49,30 +49,27 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include=".gitignore" />
+    <None Include="Monitoring\cleanup-and-restart.bat" />
+    <None Include="Monitoring\diagnose-prometheus.bat" />
+    <None Include="Monitoring\Grafana\dashboards\.gitkeep" />
+    <None Include="Monitoring\Grafana\GRAFANA_TESTS_README.md" />
+    <None Include="Monitoring\Monitoring.yaml" />
+    <None Include="Monitoring\Prometheus\prometheus.yml" />
+    <None Include="Monitoring\README.md" />
+    <None Include="Monitoring\start-monitoring.bat" />
+    <None Include="Monitoring\stop-monitoring.bat" />
+    <None Include="Monitoring\TROUBLESHOOTING.md" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="AspNetCore.HealthChecks.Redis" Version="9.0.0" />
     <PackageReference Include="AutoFixture" Version="4.18.1" />
-    <PackageReference Include="Azure.Monitor.OpenTelemetry.AspNetCore" Version="1.3.0" />
-    <PackageReference Include="Azure.Storage.Blobs" Version="12.25.1" />
-    <PackageReference Include="BenchmarkDotNet" Version="0.15.4" />
-    <PackageReference Include="Confluent.Kafka" Version="2.11.1" />
     <PackageReference Include="FluentAssertions" Version="8.7.1" />
-    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.0.0" />
-    <PackageReference Include="HotChocolate.AspNetCore" Version="15.1.10" />
-    <PackageReference Include="Microsoft.ApplicationInsights" Version="2.23.0" />
-    <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.23.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="8.0.20" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions" Version="9.0.9" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.9" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.0" />
     <PackageReference Include="Microsoft.VisualStudio.DiagnosticsHub.BenchmarkDotNetDiagnosers" Version="18.0.36525.3" />
     <PackageReference Include="Moq" Version="4.20.72" />
-    <PackageReference Include="Serilog" Version="4.3.0" />
-    <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
-    <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
-    <PackageReference Include="Serilog.Sinks.OpenTelemetry" Version="4.2.0" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.6" />
-    <PackageReference Include="System.Net.Http" Version="4.3.4" />
-    <PackageReference Include="System.Text.RegularExpressions" Version="4.3.1" />
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -82,13 +79,11 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="AWSSDK.DynamoDBv2" Version="4.0.7" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Custom.Framework.TestFactory\Custom.Framework.TestFactory.csproj" />
     <ProjectReference Include="..\Custom.Framework\Custom.Framework.csproj" />
-    <ProjectReference Include="..\TestWebApplication\TestWebApplication.csproj" />
   </ItemGroup>
 
 </Project>

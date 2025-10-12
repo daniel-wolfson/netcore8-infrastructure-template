@@ -1,6 +1,6 @@
 ﻿using Custom.Framework.Kafka;
 
-namespace Custom.Framework.Benchmarks.Benchmarks
+namespace Custom.Framework.Tests
 {
     internal class CommonSettings : KafkaCommonSettings
     {

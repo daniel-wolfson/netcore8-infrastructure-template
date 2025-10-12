@@ -6,7 +6,7 @@ using Microsoft.Extensions.Options;
 using Serilog;
 using Xunit.Abstractions;
 
-namespace Custom.Framework.Tests
+namespace Custom.Framework.Tests.Kafka
 {
     /// <summary>
     /// Unit tests for KafkaFactory producer and consumer pooling functionality

@@ -3,7 +3,7 @@ using Custom.Framework.Aws.AuroraDB.Models;
 using Microsoft.EntityFrameworkCore;
 using Xunit.Abstractions;
 
-namespace Custom.Framework.Tests;
+namespace Custom.Framework.Tests.AWS;
 
 /// <summary>
 /// Integration tests for Aurora DB repository

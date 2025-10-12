@@ -12,7 +12,7 @@ using System.Text.Json;
 using Xunit.Abstractions;
 using Path = System.IO.Path;
 
-namespace Custom.Framework.Tests
+namespace Custom.Framework.Tests.Kafka
 {
     /// <summary>
     /// Integration tests for Kafka producer and consumer with different delivery semantics.

@@ -1,0 +1,79 @@
+# Prometheus Configuration for Custom.Framework
+# This file configures Prometheus to scrape metrics from your .NET applications
+
+global:
+  scrape_interval: 15s       # Scrape targets every 15 seconds
+  evaluation_interval: 15s   # Evaluate rules every 15 seconds
+  scrape_timeout: 10s        # Timeout after 10 seconds
+
+  # Attach these labels to all time series collected
+  external_labels:
+    monitor: 'custom-framework-monitor'
+    environment: 'development'
+
+# Alertmanager configuration (optional - uncomment if using Alertmanager)
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets: ['alertmanager:9093']
+
+# Load rules once and periodically evaluate them
+# rule_files:
+#   - "alerts/*.yml"
+
+# Scrape configurations
+scrape_configs:
+  # Scrape Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          instance: 'prometheus'
+          service: 'prometheus'
+
+  # Scrape .NET applications exposing /metrics endpoint
+  - job_name: 'dotnet-applications'
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+    static_configs:
+      # Example: Your .NET application running on host machine
+      - targets: ['host.docker.internal:5000']
+        labels:
+          application: 'test-web-application'
+          environment: 'development'
+          instance: 'app-01'
+      
+      # Example: Another .NET application
+      # - targets: ['host.docker.internal:5001']
+      #   labels:
+      #     application: 'another-application'
+      #     environment: 'development'
+      #     instance: 'app-02'
+
+  # Scrape Custom.Framework test applications
+  - job_name: 'custom-framework-tests'
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['host.docker.internal:8080']
+        labels:
+          application: 'framework-tests'
+          environment: 'test'
+
+# Example: Service discovery for Kubernetes (uncomment if needed)
+# - job_name: 'kubernetes-pods'
+#   kubernetes_sd_configs:
+#     - role: pod
+#   relabel_configs:
+#     - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+#       action: keep
+#       regex: true
+#     - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+#       action: replace
+#       target_label: __metrics_path__
+#       regex: (.+)
+#     - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+#       action: replace
+#       regex: ([^:]+)(?::\d+)?;(\d+)
+#       replacement: $1:$2
+#       target_label: __address__

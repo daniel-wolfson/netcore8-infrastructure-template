@@ -4,23 +4,17 @@ using Custom.Framework.Aws.DynamoDB;
 using System.Diagnostics;
 using Xunit.Abstractions;
 
-namespace Custom.Framework.Tests;
+namespace Custom.Framework.Tests.AWS;
 
 /// <summary>
 /// Integration tests for DynamoDB repository using a local/test DynamoDB endpoint.
 /// These tests require either DynamoDB Local running, or AWS credentials with access to the target table.
 /// </summary>
-public class DynamoDBTests : IAsyncLifetime
+public class DynamoDBTests(ITestOutputHelper output) : IAsyncLifetime
 {
-    private readonly ITestOutputHelper _output;
     private ServiceProvider _provider = default!;
     private IAmazonDynamoDB _client = default!;
-    private ILogger<DynamoDBTests> _logger;
-
-    public DynamoDBTests(ITestOutputHelper output)
-    {
-        _output = output;
-    }
+    private ILogger<DynamoDBTests> _logger = default!;
 
     public async Task InitializeAsync()
     {
@@ -33,28 +27,24 @@ public class DynamoDBTests : IAsyncLifetime
             .AddEnvironmentVariables()
             .Build();
 
-        var region = baseConfig["DynamoDB:Region"] ?? "";
-        var serviceUrl = baseConfig["DynamoDB:ServiceUrl"] ?? "";
-        var accessKey = baseConfig["DynamoDB:AccessKey"] ?? "";
-        var secretKey = baseConfig["DynamoDB:SecretKey"] ?? "";
-
-        // Configuration for local DynamoDB by default. Override via env vars or appsettings.Test.json for real AWS.
+        // Configuration for local DynamoDB by default.
         var config = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["DynamoDB:Region"] = region,
-                ["DynamoDB:ServiceUrl"] = serviceUrl,
-                ["DynamoDB:AccessKey"] = accessKey,
-                ["DynamoDB:SecretKey"] = secretKey
+                ["DynamoDB:Region"] = baseConfig["DynamoDB:Region"],
+                ["DynamoDB:ServiceUrl"] = baseConfig["DynamoDB:ServiceUrl"],
+                ["DynamoDB:AccessKey"] = baseConfig["DynamoDB:AccessKey"],
+                ["DynamoDB:SecretKey"] = baseConfig["DynamoDB:SecretKey"]
             })
             .Build();
 
-        services.AddLogging(b => b.AddXUnit(_output));
+        services.AddLogging(b => b.AddXUnit(output));
         services.AddSingleton<IConfiguration>(config);
         services.AddDynamoDb(config);
 
         _provider = services.BuildServiceProvider();
         _client = _provider.GetRequiredService<IAmazonDynamoDB>();
+        _logger = _provider.GetService<ILogger<DynamoDBTests>>()!;
 
         // Ensure the tables used by our sample models exist
         await EnsureTableAsync("UserSessions",
@@ -66,8 +56,6 @@ public class DynamoDBTests : IAsyncLifetime
         await EnsureTableAsync("Events",
             [("EventType", ScalarAttributeType.S)],
             ("TimestampEventId", ScalarAttributeType.S));
-
-
     }
 
     public Task DisposeAsync()

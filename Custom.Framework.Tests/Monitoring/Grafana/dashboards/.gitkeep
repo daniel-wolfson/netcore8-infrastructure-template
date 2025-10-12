@@ -1,0 +1,7 @@
+# Placeholder for Grafana dashboards
+# Add your custom dashboard JSON files here
+
+# Example:
+# - application-metrics.json
+# - system-metrics.json
+# - custom-dashboard.json

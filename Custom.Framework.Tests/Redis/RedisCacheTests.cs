@@ -8,7 +8,7 @@ using Serilog;
 using StackExchange.Redis;
 using Xunit.Abstractions;
 
-namespace Custom.Framework.Tests;
+namespace Custom.Framework.Tests.Redis;
 
 /// <summary>
 /// RedisCacheTests - test class for RedisCache using xunit

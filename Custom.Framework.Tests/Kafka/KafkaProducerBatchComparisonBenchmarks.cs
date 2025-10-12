@@ -2,9 +2,8 @@ using BenchmarkDotNet.Attributes;
 using Custom.Framework.Kafka;
 using Microsoft.VSDiagnostics;
 using Moq;
-using Serilog;
 
-namespace Custom.Framework.Benchmarks.Benchmarks;
+namespace Custom.Framework.Tests.Kafka;
 
 [CPUUsageDiagnoser]
 public class KafkaProducerBatchComparisonBenchmarks
@@ -25,7 +24,8 @@ public class KafkaProducerBatchComparisonBenchmarks
     public void Setup()
     {
         _logger = new Mock<ILogger>().Object;
-        var otions = new KafkaOptions() { 
+        var otions = new KafkaOptions()
+        {
             Common = new CommonSettings
             {
                 EnableMetrics = false,

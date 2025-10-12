@@ -11,7 +11,7 @@ using StackExchange.Redis.Maintenance;
 using StackExchange.Redis.Profiling;
 using System.Net;
 
-namespace Custom.Framework.Tests;
+namespace Custom.Framework.Tests.Redis;
 
 public class RedisHealthChecksTests
 {

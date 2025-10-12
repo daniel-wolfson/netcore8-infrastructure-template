@@ -1,0 +1,38 @@
+{
+  "Grafana": {
+    "Enabled": true,
+    "Url": "http://grafana:3000",
+    "ApiKey": "your-grafana-api-key-here",
+    "Username": null,
+    "Password": null,
+    "OrganizationId": 1,
+    "AutoProvisionDashboards": true,
+    "AutoProvisionDataSources": true,
+    "Dashboards": {
+      "ProvisionPrometheus": true,
+      "ProvisionKafka": false,
+      "ProvisionDatabase": false,
+      "ProvisionDynamoDB": false,
+      "FolderName": "Custom Framework",
+      "Overwrite": true
+    },
+    "DataSources": {
+      "PrometheusUrl": "http://prometheus:9090",
+      "PrometheusName": "Prometheus",
+      "SetPrometheusAsDefault": true,
+      "ScrapeInterval": "15s"
+    },
+    "Annotations": {
+      "EnableDeploymentAnnotations": true,
+      "EnableErrorAnnotations": false,
+      "DefaultTags": [
+        "framework",
+        "automated"
+      ],
+      "DashboardUid": null
+    },
+    "TimeoutSeconds": 30,
+    "EnableRetry": true,
+    "MaxRetryAttempts": 3
+  }
+}
