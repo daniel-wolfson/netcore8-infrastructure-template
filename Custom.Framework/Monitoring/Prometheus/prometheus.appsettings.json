@@ -1,0 +1,41 @@
+{
+  "Prometheus": {
+    "Enabled": true,
+    "MetricsEndpoint": "/metrics",
+    "ApplicationName": "my-application",
+    "Environment": "Production",
+    "EnableAspNetCoreMetrics": true,
+    "EnableProcessMetrics": true,
+    "EnableRuntimeMetrics": true,
+    "EnableDatabaseMetrics": true,
+    "EnableHttpClientMetrics": true,
+    "CustomLabels": {
+      "team": "backend",
+      "service": "order-api",
+      "version": "1.0.0",
+      "datacenter": "us-east-1"
+    },
+    "HistogramBuckets": [
+      0.001,
+      0.005,
+      0.01,
+      0.025,
+      0.05,
+      0.1,
+      0.25,
+      0.5,
+      1,
+      2.5,
+      5,
+      10
+    ],
+    "Pushgateway": {
+      "Enabled": false,
+      "Endpoint": "http://pushgateway:9091",
+      "JobName": "my-batch-job",
+      "PushIntervalSeconds": 60,
+      "Username": null,
+      "Password": null
+    }
+  }
+}
