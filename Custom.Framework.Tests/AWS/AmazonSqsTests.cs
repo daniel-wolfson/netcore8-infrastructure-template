@@ -1,11 +1,14 @@
-using Amazon.SQS;
+﻿using Amazon.SQS;
 using Amazon.SQS.Model;
 using Custom.Framework.Aws.AmazonSQS;
 using Custom.Framework.Aws.AmazonSQS.Models;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
+using DotNet.Testcontainers.Builders;
+using DotNet.Testcontainers.Containers;
+using DotNet.Testcontainers.Networks;
+using Serilog.Data;
 using System.Diagnostics;
+using Testcontainers.LocalStack;
+using Testcontainers.PostgreSql;
 using Xunit.Abstractions;
 
 namespace Custom.Framework.Tests.AWS;
@@ -14,12 +17,13 @@ namespace Custom.Framework.Tests.AWS;
 /// Integration tests for Amazon SQS client using local SQS endpoint (LocalStack).
 /// These tests require either LocalStack running, or AWS credentials with access to SQS.
 /// </summary>
-public class AmazonSqsTests(ITestOutputHelper output) : IAsyncLifetime
+public class AmazonSqsTests(ITestOutputHelper output) : IAsyncLifetime, IAsyncDisposable
 {
     private ServiceProvider _provider = default!;
     private ISqsClient _sqsClient = default!;
     private IAmazonSQS _awsClient = default!;
     private ILogger<AmazonSqsTests> _logger = default!;
+
     private readonly ITestOutputHelper _output = output;
 
     private const string TestQueueName = "test-orders-queue";
@@ -27,6 +31,11 @@ public class AmazonSqsTests(ITestOutputHelper output) : IAsyncLifetime
     private const string TestDlqName = "test-orders-queue-dlq";
     private const string TestNotificationQueueName = "test-notifications-queue";
     private const string TestJobQueueName = "test-jobs-queue";
+
+    private INetwork _network = default!;
+    private IContainer _localStackContainer = default!;
+    private IContainer _sqsInitContainer = default!;
+    private PostgreSqlContainer _auroraPostgresContainer = default!;
 
     public async Task InitializeAsync()
     {
@@ -62,6 +71,27 @@ public class AmazonSqsTests(ITestOutputHelper output) : IAsyncLifetime
         _sqsClient = _provider.GetRequiredService<ISqsClient>();
         _awsClient = _provider.GetRequiredService<IAmazonSQS>();
         _logger = _provider.GetRequiredService<ILogger<AmazonSqsTests>>();
+
+        var assemblyLocation = typeof(AmazonSqsTests).Assembly.Location;
+        var assemblyDir = Path.GetDirectoryName(assemblyLocation)!;
+        var projectRoot = Path.GetFullPath(Path.Combine(assemblyDir, "..", "..", ".."));
+        var volumePath = Path.Combine(projectRoot, "AWS\\volume");
+
+        _network = new NetworkBuilder().WithName($"aws-test-network-{Guid.NewGuid():N}").Build();
+
+        _localStackContainer = GetLocalStackContainer(_network, volumePath).Build();
+        _sqsInitContainer = GetSqsInitContainer(_network, _localStackContainer, 
+            (Microsoft.Extensions.Logging.ILogger)_logger, volumePath).Build();
+
+        _auroraPostgresContainer = GetAuroraPostgresContainer(_network, volumePath).Build();
+
+        await StartLocalStackContainersAsync();
+
+        // Create all queues with attributes
+        await CreateAllTestQueuesAsync();
+
+        // Configure DLQ
+        await ConfigureDeadLetterQueueAsync(TestQueueName, TestDlqName);
 
         // Create test queues
         await EnsureQueueExistsAsync(TestQueueName);
@@ -366,6 +396,7 @@ public class AmazonSqsTests(ITestOutputHelper output) : IAsyncLifetime
         sw.Stop();
 
         // Assert
+        await Task.Delay(10000).WaitAsync(CancellationToken.None); // Wait for messages to be available
         Assert.Equal(totalMessages, successCount);
         var throughput = totalMessages / sw.Elapsed.TotalSeconds;
         _logger.LogInformation(
@@ -639,6 +670,358 @@ public class AmazonSqsTests(ITestOutputHelper output) : IAsyncLifetime
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to purge queue {QueueName}, continuing anyway", queueName);
+        }
+    }
+
+    #endregion
+
+    #region Containers
+
+    private async Task StartLocalStackContainersAsync()
+    {
+        try
+        {
+            await _localStackContainer.StartAsync();
+
+            // Start and wait for init container to complete
+            await _sqsInitContainer.StartAsync();
+
+            var (stdout, stderr) = await _sqsInitContainer.GetLogsAsync();
+            _output.WriteLine(stdout);
+
+            // Wait for the init container to finish its job and exit
+            // The container will stop automatically after initialization
+            var timeout = TimeSpan.FromSeconds(60);
+            var sw = Stopwatch.StartNew();
+
+            while (sw.Elapsed < timeout)
+            {
+                if (stdout.Contains("SQS init done") || stdout.Contains("SQS init failed"))
+                {
+                    break;
+                }
+                await Task.Delay(1000);
+            }
+
+            await _auroraPostgresContainer.StartAsync();
+        }
+        catch (Exception ex )
+        {
+            _output.WriteLine($"❌ INITIALIZATION FAILED: {ex.Message}");
+            _output.WriteLine($"Stack Trace: {ex.StackTrace}");
+
+            // Dump all container logs on failure
+            await DumpContainerLogsAsync();
+
+            throw;
+        }
+    }
+
+    private static LocalStackBuilder GetLocalStackContainer(INetwork network, string volumePath)
+    {
+        return new LocalStackBuilder()
+                .WithImage("localstack/localstack:latest")
+                .WithName(Environment.GetEnvironmentVariable("LOCALSTACK_DOCKER_NAME") ?? "localstack-main")
+                .WithNetwork(network)
+                .WithPortBinding(4566, 4566) // Maps host 4566 -> container 4566
+                .WithPortBinding(4510, 4510) // Maps host 4510 -> container 4510
+                .WithPortBinding(4559, 4559) // Maps host 4559 -> container 4559
+                .WithEnvironment("LOCALSTACK_AUTH_TOKEN", Environment.GetEnvironmentVariable("LOCALSTACK_AUTH_TOKEN") ?? string.Empty)
+                .WithEnvironment("SERVICES", "sqs,rds,dynamodb,s3")
+                .WithEnvironment("DEBUG", Environment.GetEnvironmentVariable("DEBUG") ?? "1")
+                .WithEnvironment("PERSISTENCE", Environment.GetEnvironmentVariable("PERSISTENCE") ?? "0")
+                .WithEnvironment("LAMBDA_EXECUTOR", Environment.GetEnvironmentVariable("LAMBDA_EXECUTOR") ?? "local")
+                .WithEnvironment("DOCKER_HOST", "unix:///var/run/docker.sock")
+                .WithEnvironment("AWS_DEFAULT_REGION", "us-east-1")
+                .WithEnvironment("AWS_ACCESS_KEY_ID", "test")
+                .WithEnvironment("AWS_SECRET_ACCESS_KEY", "test")
+                .WithEnvironment("EAGER_SERVICE_LOADING", "1")
+                .WithEnvironment("SQS_ENDPOINT_STRATEGY", "path")
+                .WithEnvironment("RDS_PG_CUSTOM_VERSIONS", "16.1")
+                .WithBindMount(Environment.GetEnvironmentVariable("LOCALSTACK_VOLUME_DIR")
+                    ?? $"{volumePath}/volume", "/var/lib/localstack")
+                .WithBindMount("/var/run/docker.sock", "/var/run/docker.sock") // Docker-in-Docker support
+                .WithWaitStrategy(Wait.ForUnixContainer()
+                    .UntilHttpRequestIsSucceeded(r => r
+                        .ForPath("/_localstack/health")
+                        .ForPort(4566)
+                        .ForStatusCode(System.Net.HttpStatusCode.OK)));
+    }
+
+    private static ContainerBuilder GetSqsInitContainer(INetwork network, IContainer localStackContainer,
+        Microsoft.Extensions.Logging.ILogger logger, string volumePath)
+    {
+        var rawScript = @"
+        set -e
+        aws_local() { aws --endpoint-url=""$LOCALSTACK_ENDPOINT"" ""$@""; }
+        echo '================================================'
+        echo 'Waiting for LocalStack to be ready...'
+        echo '================================================'
+        for i in 1 2 3 4 5; do
+          if aws_local sqs list-queues >/dev/null 2>&1; then
+            echo 'LocalStack SQS is ready!'
+            break
+          fi
+          sleep 2
+          if [ ""$i"" -eq 5 ]; then
+            echo 'ERROR: LocalStack not ready after 10 seconds' >&2
+            exit 1
+          fi
+        done
+        echo '================================================'
+        echo 'LocalStack initialization complete!'
+        echo '================================================'
+        echo 'SQS init done'
+        ";
+
+        var cleanScript = rawScript.Replace("\r\n", "\n").Replace("\r", "\n").Trim();
+
+        return new ContainerBuilder()
+            .WithImage("amazon/aws-cli:latest")
+            .WithName("localstack-test-sqs-init")
+            .WithNetwork(network)
+            .DependsOn(localStackContainer)
+            .WithEnvironment("AWS_DEFAULT_REGION", "us-east-1")
+            .WithEnvironment("AWS_ACCESS_KEY_ID", "test")
+            .WithEnvironment("AWS_SECRET_ACCESS_KEY", "test")
+            .WithEnvironment("LOCALSTACK_ENDPOINT", "http://localstack-main:4566")
+            .WithEntrypoint("/bin/sh", "-c")
+            .WithCommand(cleanScript)
+            .WithLogger(logger)
+            .WithWaitStrategy(Wait.ForUnixContainer()
+                .UntilMessageIsLogged("SQS init done"));
+    }
+
+    private static PostgreSqlBuilder GetAuroraPostgresContainer(INetwork network, string volumePath)
+    {
+        return new PostgreSqlBuilder()
+                .WithImage("postgres:16-alpine")
+                .WithName("aurora-postgres-local")
+                .WithNetwork(network)
+                .WithPortBinding(5432, 5432) //"127.0.0.1", 
+                .WithEnvironment("POSTGRES_USER", "admin")
+                .WithEnvironment("POSTGRES_PASSWORD", "localpassword")
+                .WithEnvironment("POSTGRES_DB", "auroradb")
+                .WithEnvironment("POSTGRES_INITDB_ARGS", "--encoding=UTF8 --locale=en_US.utf8")
+                .WithBindMount($"{volumePath}/Aurora/Postgres-data", "/var/lib/postgresql/data")
+                .WithBindMount($"{volumePath}/Aurora/init-aurora.sql", "/docker-entrypoint-initdb.d/init-aurora.sql");
+    }
+
+    private async Task ConfigureDeadLetterQueueAsync(string queueName, string dlqName)
+    {
+        try
+        {
+            var dlqUrl = await _sqsClient.GetQueueUrlAsync(dlqName);
+            var dlqArn = (await _awsClient.GetQueueAttributesAsync(new GetQueueAttributesRequest
+            {
+                QueueUrl = dlqUrl,
+                AttributeNames = new List<string> { "QueueArn" }
+            })).Attributes["QueueArn"];
+
+            var queueUrl = await _sqsClient.GetQueueUrlAsync(queueName);
+
+            var redrivePolicy = $"{{\"deadLetterTargetArn\":\"{dlqArn}\",\"maxReceiveCount\":\"3\"}}";
+
+            await _awsClient.SetQueueAttributesAsync(new SetQueueAttributesRequest
+            {
+                QueueUrl = queueUrl,
+                Attributes = new Dictionary<string, string>
+                {
+                    ["RedrivePolicy"] = redrivePolicy
+                }
+            });
+
+            _logger.LogInformation("Configured DLQ for {QueueName}", queueName);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to configure DLQ for {QueueName}", queueName);
+        }
+    }
+
+    /// <summary>
+    /// Creates all test queues with their respective configurations
+    /// </summary>
+    private async Task CreateAllTestQueuesAsync()
+    {
+        try
+        {
+            _logger.LogInformation("Creating test queues...");
+
+            // 1. Create main orders queue
+            await CreateQueueWithAttributesAsync(
+                TestQueueName,
+                new Dictionary<string, string>
+                {
+                    ["VisibilityTimeout"] = "30",
+                    ["MessageRetentionPeriod"] = "345600", // 4 days
+                    ["ReceiveMessageWaitTimeSeconds"] = "20" // Long polling
+                });
+
+            // 2. Create Dead Letter Queue
+            await CreateQueueWithAttributesAsync(
+                TestDlqName,
+                new Dictionary<string, string>
+                {
+                    ["MessageRetentionPeriod"] = "1209600" // 14 days
+                });
+
+            // 3. Create notifications queue
+            await CreateQueueWithAttributesAsync(
+                TestNotificationQueueName,
+                new Dictionary<string, string>
+                {
+                    ["VisibilityTimeout"] = "30",
+                    ["MessageRetentionPeriod"] = "345600" // 4 days
+                });
+
+            // 4. Create jobs queue
+            await CreateQueueWithAttributesAsync(
+                TestJobQueueName,
+                new Dictionary<string, string>
+                {
+                    ["VisibilityTimeout"] = "60",
+                    ["DelaySeconds"] = "0"
+                });
+
+            // 5. Create FIFO queue
+            await CreateQueueWithAttributesAsync(
+                TestFifoQueueName,
+                new Dictionary<string, string>
+                {
+                    ["FifoQueue"] = "true",
+                    ["ContentBasedDeduplication"] = "true"
+                },
+                isFifo: true);
+
+            _logger.LogInformation("All test queues created successfully");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to create test queues");
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Creates a queue with specified attributes, or returns existing queue URL
+    /// </summary>
+    private async Task<string> CreateQueueWithAttributesAsync(
+        string queueName,
+        Dictionary<string, string> attributes,
+        bool isFifo = false)
+    {
+        try
+        {
+            // Try to get existing queue first
+            var queueUrl = await _sqsClient.GetQueueUrlAsync(queueName);
+            _logger.LogInformation("Queue {QueueName} already exists", queueName);
+            return queueUrl;
+        }
+        catch (QueueDoesNotExistException)
+        {
+            // Queue doesn't exist, create it
+            _logger.LogInformation("Creating queue {QueueName} with attributes: {Attributes}",
+                queueName,
+                string.Join(", ", attributes.Select(kvp => $"{kvp.Key}={kvp.Value}")));
+
+            var createRequest = new CreateQueueRequest
+            {
+                QueueName = queueName,
+                Attributes = attributes
+            };
+
+            var response = await _awsClient.CreateQueueAsync(createRequest);
+            _logger.LogInformation("Queue {QueueName} created with URL: {QueueUrl}", queueName, response.QueueUrl);
+            return response.QueueUrl;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to create queue {QueueName}, continuing anyway", queueName);
+            return string.Empty;
+        }
+    }
+
+    private async Task DumpContainerLogsAsync()
+    {
+        try
+        {
+            if (_localStackContainer != null)
+            {
+                _output.WriteLine("\n=== LOCALSTACK LOGS ===");
+                var (stdout, stderr) = await _localStackContainer.GetLogsAsync();
+                _output.WriteLine(stdout);
+                if (!string.IsNullOrEmpty(stderr))
+                {
+                    _output.WriteLine("STDERR:");
+                    _output.WriteLine(stderr);
+                }
+            }
+
+            if (_sqsInitContainer != null)
+            {
+                _output.WriteLine("\n=== SQS INIT LOGS ===");
+                var (stdout, stderr) = await _sqsInitContainer.GetLogsAsync();
+                _output.WriteLine(stdout);
+                if (!string.IsNullOrEmpty(stderr))
+                {
+                    _output.WriteLine("STDERR:");
+                    _output.WriteLine(stderr);
+                }
+            }
+
+            if (_auroraPostgresContainer != null)
+            {
+                _output.WriteLine("\n=== POSTGRES LOGS ===");
+                var (stdout, stderr) = await _auroraPostgresContainer.GetLogsAsync();
+                _output.WriteLine(stdout);
+                if (!string.IsNullOrEmpty(stderr))
+                {
+                    _output.WriteLine("STDERR:");
+                    _output.WriteLine(stderr);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _output.WriteLine($"Failed to dump container logs: {ex.Message}");
+        }
+    }
+
+    async ValueTask IAsyncDisposable.DisposeAsync()
+    {
+        try
+        {
+            _provider?.Dispose();
+
+            // Only clean up containers if tests completed successfully
+            if (_sqsInitContainer != null)
+            {
+                _output.WriteLine("🧹 Cleaning up SQS init container...");
+                await _sqsInitContainer.DisposeAsync();
+            }
+
+            if (_localStackContainer != null)
+            {
+                _output.WriteLine("🧹 Cleaning up LocalStack container...");
+                await _localStackContainer.DisposeAsync();
+            }
+
+            if (_auroraPostgresContainer != null)
+            {
+                _output.WriteLine("🧹 Cleaning up Aurora Postgres container...");
+                await _auroraPostgresContainer.DisposeAsync();
+            }
+
+            if (_network != null)
+            {
+                _output.WriteLine("🧹 Cleaning up network...");
+                await _network.DisposeAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            _output.WriteLine($"⚠️ Cleanup failed: {ex.Message}");
         }
     }
 

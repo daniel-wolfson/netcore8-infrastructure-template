@@ -1,0 +1,672 @@
+﻿{
+    "Id": "64ad39669ea4a70f51649eae8ee13b3c47c5c35eaacfbd14529a6bbdbc938e4d",
+    "Created": "2025-10-20T13:22:31.42403698Z",
+    "Path": "docker-entrypoint.sh",
+    "Args": [],
+    "State": {
+        "Status": "exited",
+        "Running": false,
+        "Paused": false,
+        "Restarting": false,
+        "OOMKilled": false,
+        "Dead": false,
+        "Pid": 0,
+        "ExitCode": 137,
+        "Error": "",
+        "StartedAt": "2025-10-20T13:22:32.490899855Z",
+        "FinishedAt": "2025-10-20T13:33:21.603965868Z",
+        "Health": {
+            "Status": "unhealthy",
+            "FailingStreak": 0,
+            "Log": [
+                {
+                    "Start": "2025-10-20T13:32:35.835039542Z",
+                    "End": "2025-10-20T13:32:35.932259995Z",
+                    "ExitCode": 0,
+                    "Output": "  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current\n                                 Dload  Upload   Total   Spent    Left  Speed\n\r  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0\r100   888  100   888    0     0   222k      0 --:--:-- --:--:-- --:--:--  289k\n{\"services\": {\"acm\": \"disabled\", \"apigateway\": \"disabled\", \"cloudformation\": \"disabled\", \"cloudwatch\": \"disabled\", \"config\": \"disabled\", \"dynamodb\": \"running\", \"dynamodbstreams\": \"running\", \"ec2\": \"disabled\", \"es\": \"disabled\", \"events\": \"disabled\", \"firehose\": \"disabled\", \"iam\": \"disabled\", \"kinesis\": \"running\", \"kms\": \"disabled\", \"lambda\": \"disabled\", \"logs\": \"disabled\", \"opensearch\": \"disabled\", \"redshift\": \"disabled\", \"resource-groups\": \"disabled\", \"resourcegroupstaggingapi\": \"disabled\", \"route53\": \"disabled\", \"route53resolver\": \"disabled\", \"s3\": \"running\", \"s3control\": \"disabled\", \"scheduler\": \"disabled\", \"secretsmanager\": \"disabled\", \"ses\": \"disabled\", \"sns\": \"disabled\", \"sqs\": \"running\", \"ssm\": \"disabled\", \"stepfunctions\": \"disabled\", \"sts\": \"disabled\", \"support\": \"disabled\", \"swf\": \"disabled\", \"transcribe\": \"disabled\"}, \"edition\": \"community\", \"version\": \"4.9.3.dev26\"}"
+                },
+                {
+                    "Start": "2025-10-20T13:32:45.93352534Z",
+                    "End": "2025-10-20T13:32:46.013951106Z",
+                    "ExitCode": 0,
+                    "Output": "  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current\n                                 Dload  Upload   Total   Spent    Left  Speed\n\r  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0\r100   888  100   888    0     0   260k      0 --:--:-- --:--:-- --:--:--  289k\n{\"services\": {\"acm\": \"disabled\", \"apigateway\": \"disabled\", \"cloudformation\": \"disabled\", \"cloudwatch\": \"disabled\", \"config\": \"disabled\", \"dynamodb\": \"running\", \"dynamodbstreams\": \"running\", \"ec2\": \"disabled\", \"es\": \"disabled\", \"events\": \"disabled\", \"firehose\": \"disabled\", \"iam\": \"disabled\", \"kinesis\": \"running\", \"kms\": \"disabled\", \"lambda\": \"disabled\", \"logs\": \"disabled\", \"opensearch\": \"disabled\", \"redshift\": \"disabled\", \"resource-groups\": \"disabled\", \"resourcegroupstaggingapi\": \"disabled\", \"route53\": \"disabled\", \"route53resolver\": \"disabled\", \"s3\": \"running\", \"s3control\": \"disabled\", \"scheduler\": \"disabled\", \"secretsmanager\": \"disabled\", \"ses\": \"disabled\", \"sns\": \"disabled\", \"sqs\": \"running\", \"ssm\": \"disabled\", \"stepfunctions\": \"disabled\", \"sts\": \"disabled\", \"support\": \"disabled\", \"swf\": \"disabled\", \"transcribe\": \"disabled\"}, \"edition\": \"community\", \"version\": \"4.9.3.dev26\"}"
+                },
+                {
+                    "Start": "2025-10-20T13:32:56.016093358Z",
+                    "End": "2025-10-20T13:32:56.100592043Z",
+                    "ExitCode": 0,
+                    "Output": "  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current\n                                 Dload  Upload   Total   Spent    Left  Speed\n\r  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0\r100   888  100   888    0     0   237k      0 --:--:-- --:--:-- --:--:--  289k\n{\"services\": {\"acm\": \"disabled\", \"apigateway\": \"disabled\", \"cloudformation\": \"disabled\", \"cloudwatch\": \"disabled\", \"config\": \"disabled\", \"dynamodb\": \"running\", \"dynamodbstreams\": \"running\", \"ec2\": \"disabled\", \"es\": \"disabled\", \"events\": \"disabled\", \"firehose\": \"disabled\", \"iam\": \"disabled\", \"kinesis\": \"running\", \"kms\": \"disabled\", \"lambda\": \"disabled\", \"logs\": \"disabled\", \"opensearch\": \"disabled\", \"redshift\": \"disabled\", \"resource-groups\": \"disabled\", \"resourcegroupstaggingapi\": \"disabled\", \"route53\": \"disabled\", \"route53resolver\": \"disabled\", \"s3\": \"running\", \"s3control\": \"disabled\", \"scheduler\": \"disabled\", \"secretsmanager\": \"disabled\", \"ses\": \"disabled\", \"sns\": \"disabled\", \"sqs\": \"running\", \"ssm\": \"disabled\", \"stepfunctions\": \"disabled\", \"sts\": \"disabled\", \"support\": \"disabled\", \"swf\": \"disabled\", \"transcribe\": \"disabled\"}, \"edition\": \"community\", \"version\": \"4.9.3.dev26\"}"
+                },
+                {
+                    "Start": "2025-10-20T13:33:06.102530911Z",
+                    "End": "2025-10-20T13:33:06.190975227Z",
+                    "ExitCode": 0,
+                    "Output": "  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current\n                                 Dload  Upload   Total   Spent    Left  Speed\n\r  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0\r100   888  100   888    0     0   235k      0 --:--:-- --:--:-- --:--:--  289k\n{\"services\": {\"acm\": \"disabled\", \"apigateway\": \"disabled\", \"cloudformation\": \"disabled\", \"cloudwatch\": \"disabled\", \"config\": \"disabled\", \"dynamodb\": \"running\", \"dynamodbstreams\": \"running\", \"ec2\": \"disabled\", \"es\": \"disabled\", \"events\": \"disabled\", \"firehose\": \"disabled\", \"iam\": \"disabled\", \"kinesis\": \"running\", \"kms\": \"disabled\", \"lambda\": \"disabled\", \"logs\": \"disabled\", \"opensearch\": \"disabled\", \"redshift\": \"disabled\", \"resource-groups\": \"disabled\", \"resourcegroupstaggingapi\": \"disabled\", \"route53\": \"disabled\", \"route53resolver\": \"disabled\", \"s3\": \"running\", \"s3control\": \"disabled\", \"scheduler\": \"disabled\", \"secretsmanager\": \"disabled\", \"ses\": \"disabled\", \"sns\": \"disabled\", \"sqs\": \"running\", \"ssm\": \"disabled\", \"stepfunctions\": \"disabled\", \"sts\": \"disabled\", \"support\": \"disabled\", \"swf\": \"disabled\", \"transcribe\": \"disabled\"}, \"edition\": \"community\", \"version\": \"4.9.3.dev26\"}"
+                },
+                {
+                    "Start": "2025-10-20T13:33:16.190692716Z",
+                    "End": "2025-10-20T13:33:16.275754558Z",
+                    "ExitCode": 0,
+                    "Output": "  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current\n                                 Dload  Upload   Total   Spent    Left  Speed\n\r  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0\r100   888  100   888    0     0   266k      0 --:--:-- --:--:-- --:--:--  289k\n{\"services\": {\"acm\": \"disabled\", \"apigateway\": \"disabled\", \"cloudformation\": \"disabled\", \"cloudwatch\": \"disabled\", \"config\": \"disabled\", \"dynamodb\": \"running\", \"dynamodbstreams\": \"running\", \"ec2\": \"disabled\", \"es\": \"disabled\", \"events\": \"disabled\", \"firehose\": \"disabled\", \"iam\": \"disabled\", \"kinesis\": \"running\", \"kms\": \"disabled\", \"lambda\": \"disabled\", \"logs\": \"disabled\", \"opensearch\": \"disabled\", \"redshift\": \"disabled\", \"resource-groups\": \"disabled\", \"resourcegroupstaggingapi\": \"disabled\", \"route53\": \"disabled\", \"route53resolver\": \"disabled\", \"s3\": \"running\", \"s3control\": \"disabled\", \"scheduler\": \"disabled\", \"secretsmanager\": \"disabled\", \"ses\": \"disabled\", \"sns\": \"disabled\", \"sqs\": \"running\", \"ssm\": \"disabled\", \"stepfunctions\": \"disabled\", \"sts\": \"disabled\", \"support\": \"disabled\", \"swf\": \"disabled\", \"transcribe\": \"disabled\"}, \"edition\": \"community\", \"version\": \"4.9.3.dev26\"}"
+                }
+            ]
+        }
+    },
+    "Image": "sha256:e2a3085b343ab866b1eaa1cae3d222ac5d504bb736897b33a3687f1460273e87",
+    "ResolvConfPath": "/var/lib/docker/containers/64ad39669ea4a70f51649eae8ee13b3c47c5c35eaacfbd14529a6bbdbc938e4d/resolv.conf",
+    "HostnamePath": "/var/lib/docker/containers/64ad39669ea4a70f51649eae8ee13b3c47c5c35eaacfbd14529a6bbdbc938e4d/hostname",
+    "HostsPath": "/var/lib/docker/containers/64ad39669ea4a70f51649eae8ee13b3c47c5c35eaacfbd14529a6bbdbc938e4d/hosts",
+    "LogPath": "/var/lib/docker/containers/64ad39669ea4a70f51649eae8ee13b3c47c5c35eaacfbd14529a6bbdbc938e4d/64ad39669ea4a70f51649eae8ee13b3c47c5c35eaacfbd14529a6bbdbc938e4d-json.log",
+    "Name": "/localstack-main",
+    "RestartCount": 0,
+    "Driver": "overlay2",
+    "Platform": "linux",
+    "MountLabel": "",
+    "ProcessLabel": "",
+    "AppArmorProfile": "",
+    "ExecIDs": null,
+    "HostConfig": {
+        "Binds": [
+            "D:\\Projects\\DotNetCore\\NetCore8.Infrastructure\\Custom.Framework.Tests\\AWS\\volume:/var/lib/localstack:rw",
+            "/var/run/docker.sock:/var/run/docker.sock:rw"
+        ],
+        "ContainerIDFile": "",
+        "LogConfig": {
+            "Type": "json-file",
+            "Config": {}
+        },
+        "NetworkMode": "aws_localstack-network",
+        "PortBindings": {
+            "4510/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4510"
+                }
+            ],
+            "4511/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4511"
+                }
+            ],
+            "4512/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4512"
+                }
+            ],
+            "4513/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4513"
+                }
+            ],
+            "4514/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4514"
+                }
+            ],
+            "4515/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4515"
+                }
+            ],
+            "4516/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4516"
+                }
+            ],
+            "4517/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4517"
+                }
+            ],
+            "4518/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4518"
+                }
+            ],
+            "4519/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4519"
+                }
+            ],
+            "4520/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4520"
+                }
+            ],
+            "4521/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4521"
+                }
+            ],
+            "4522/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4522"
+                }
+            ],
+            "4523/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4523"
+                }
+            ],
+            "4524/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4524"
+                }
+            ],
+            "4525/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4525"
+                }
+            ],
+            "4526/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4526"
+                }
+            ],
+            "4527/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4527"
+                }
+            ],
+            "4528/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4528"
+                }
+            ],
+            "4529/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4529"
+                }
+            ],
+            "4530/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4530"
+                }
+            ],
+            "4531/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4531"
+                }
+            ],
+            "4532/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4532"
+                }
+            ],
+            "4533/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4533"
+                }
+            ],
+            "4534/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4534"
+                }
+            ],
+            "4535/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4535"
+                }
+            ],
+            "4536/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4536"
+                }
+            ],
+            "4537/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4537"
+                }
+            ],
+            "4538/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4538"
+                }
+            ],
+            "4539/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4539"
+                }
+            ],
+            "4540/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4540"
+                }
+            ],
+            "4541/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4541"
+                }
+            ],
+            "4542/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4542"
+                }
+            ],
+            "4543/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4543"
+                }
+            ],
+            "4544/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4544"
+                }
+            ],
+            "4545/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4545"
+                }
+            ],
+            "4546/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4546"
+                }
+            ],
+            "4547/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4547"
+                }
+            ],
+            "4548/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4548"
+                }
+            ],
+            "4549/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4549"
+                }
+            ],
+            "4550/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4550"
+                }
+            ],
+            "4551/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4551"
+                }
+            ],
+            "4552/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4552"
+                }
+            ],
+            "4553/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4553"
+                }
+            ],
+            "4554/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4554"
+                }
+            ],
+            "4555/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4555"
+                }
+            ],
+            "4556/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4556"
+                }
+            ],
+            "4557/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4557"
+                }
+            ],
+            "4558/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4558"
+                }
+            ],
+            "4559/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4559"
+                }
+            ],
+            "4566/tcp": [
+                {
+                    "HostIp": "127.0.0.1",
+                    "HostPort": "4566"
+                }
+            ]
+        },
+        "RestartPolicy": {
+            "Name": "no",
+            "MaximumRetryCount": 0
+        },
+        "AutoRemove": false,
+        "VolumeDriver": "",
+        "VolumesFrom": null,
+        "ConsoleSize": [
+            0,
+            0
+        ],
+        "CapAdd": null,
+        "CapDrop": null,
+        "CgroupnsMode": "host",
+        "Dns": null,
+        "DnsOptions": null,
+        "DnsSearch": null,
+        "ExtraHosts": [],
+        "GroupAdd": null,
+        "IpcMode": "private",
+        "Cgroup": "",
+        "Links": null,
+        "OomScoreAdj": 0,
+        "PidMode": "",
+        "Privileged": false,
+        "PublishAllPorts": false,
+        "ReadonlyRootfs": false,
+        "SecurityOpt": null,
+        "UTSMode": "",
+        "UsernsMode": "",
+        "ShmSize": 67108864,
+        "Runtime": "runc",
+        "Isolation": "",
+        "CpuShares": 0,
+        "Memory": 0,
+        "NanoCpus": 0,
+        "CgroupParent": "",
+        "BlkioWeight": 0,
+        "BlkioWeightDevice": null,
+        "BlkioDeviceReadBps": null,
+        "BlkioDeviceWriteBps": null,
+        "BlkioDeviceReadIOps": null,
+        "BlkioDeviceWriteIOps": null,
+        "CpuPeriod": 0,
+        "CpuQuota": 0,
+        "CpuRealtimePeriod": 0,
+        "CpuRealtimeRuntime": 0,
+        "CpusetCpus": "",
+        "CpusetMems": "",
+        "Devices": null,
+        "DeviceCgroupRules": null,
+        "DeviceRequests": null,
+        "MemoryReservation": 0,
+        "MemorySwap": 0,
+        "MemorySwappiness": null,
+        "OomKillDisable": false,
+        "PidsLimit": null,
+        "Ulimits": null,
+        "CpuCount": 0,
+        "CpuPercent": 0,
+        "IOMaximumIOps": 0,
+        "IOMaximumBandwidth": 0,
+        "MaskedPaths": [
+            "/proc/asound",
+            "/proc/acpi",
+            "/proc/interrupts",
+            "/proc/kcore",
+            "/proc/keys",
+            "/proc/latency_stats",
+            "/proc/timer_list",
+            "/proc/timer_stats",
+            "/proc/sched_debug",
+            "/proc/scsi",
+            "/sys/firmware",
+            "/sys/devices/virtual/powercap"
+        ],
+        "ReadonlyPaths": [
+            "/proc/bus",
+            "/proc/fs",
+            "/proc/irq",
+            "/proc/sys",
+            "/proc/sysrq-trigger"
+        ]
+    },
+    "GraphDriver": {
+        "Data": {
+            "ID": "64ad39669ea4a70f51649eae8ee13b3c47c5c35eaacfbd14529a6bbdbc938e4d",
+            "LowerDir": "/var/lib/docker/overlay2/02a7aae3fe3692a58e8066b2c9e11f72cba3891d3763ffe6944b7e56e9768202-init/diff:/var/lib/docker/overlay2/1243858b98c722e041e81303cc72d07d7a5cbfe013c79c0ff212b41f0e974d90/diff:/var/lib/docker/overlay2/7c6ba37099c7a7afe5304fdc7f607328a9cdc974808c20b27c2ce0a52ed11866/diff:/var/lib/docker/overlay2/8a637cb5a6b0b05397a4d4767b617a12c31be6c06cfa9f4cfc7c1b9543a59224/diff:/var/lib/docker/overlay2/9b50b0354239080db227fe86188d077049b531b435f78e38ddef6ecf5bcf6dce/diff:/var/lib/docker/overlay2/c68d818b16283e354784bcb748accf70d2deca6fc4cc3140d565f4def97a8fed/diff:/var/lib/docker/overlay2/d02df60229d14e0cfa2cba592d4c25ac3e24ca7472e8a5e2d6e06dbbbd2317af/diff:/var/lib/docker/overlay2/76cd131f8331c2de8c32c8b5680fada5db7e5e50f7363c5ee58899623e6b3a30/diff:/var/lib/docker/overlay2/0f035758bcfe340b67dbefafd1a0ea1d197852fee17b7381c0b4b3a005df6370/diff:/var/lib/docker/overlay2/be617bfb1f630cf1caa4b7088a4067aee56552dfb1f491a98ef7eda3b8583c44/diff:/var/lib/docker/overlay2/db0eb1e7b34812aa4432f6714d28c23795d95ab8de7f7050d32dc999d2566ea0/diff:/var/lib/docker/overlay2/dd40fb340612a1ea5e62c9140841322c5c2f2851050019f3e0f2bb0ff03ec346/diff:/var/lib/docker/overlay2/29e6704c60cdc0a1fb6157c371070fa8d96e24f8dac2d34a723255698300625a/diff:/var/lib/docker/overlay2/c105342987631c8f2360053e1b060bed6e09299b5e8248c7b5c737e522f2fac4/diff:/var/lib/docker/overlay2/cbd09e6ade40fa44da3d034cb340491c3069c9895e548575839b765baf75170d/diff:/var/lib/docker/overlay2/9c556b835f137b5b516a604d13f384bce7401f0d1f6a8bf1fb6329ef5b012bcf/diff:/var/lib/docker/overlay2/3e017cd6de3c53b0bc3508f73c536ee4c68e646ea2545bd7358d75b9133c3739/diff:/var/lib/docker/overlay2/e7855dff545dc4799d1af20d2915ad8d5e8a107cab9291fb9195447f7540a5c2/diff:/var/lib/docker/overlay2/a33271e42b6cd8b8ad9710dd457134fb5894088eab4affe0df8c20e9e74065e0/diff:/var/lib/docker/overlay2/8d5738803272ea6c952e41ddf00e5a13f10bddf54ae24966a760d6046ca585f3/diff:/var/lib/docker/overlay2/f5925a8df61e79ab936c4e3a9ae4b9c630706d9f58eba289c6eb3f79cd4b14bc/diff:/var/lib/docker/overlay2/b24a9502d2f847854432b2117a9e73af953df8e203a3f205e78f08b24203652b/diff:/var/lib/docker/overlay2/27ad1ede847697f7f4f0fe87e000c3edb52eaeb46a13dbb408bad5ff7b8d97e0/diff:/var/lib/docker/overlay2/97ee13886e2b5c05f93aec88b77ac48f386bc5d9f81e2c23a2a68a475241cde3/diff:/var/lib/docker/overlay2/8246c431f4e911072f50846b28e9d58842650b7fc755c45dbfde834cd6ddf378/diff",
+            "MergedDir": "/var/lib/docker/overlay2/02a7aae3fe3692a58e8066b2c9e11f72cba3891d3763ffe6944b7e56e9768202/merged",
+            "UpperDir": "/var/lib/docker/overlay2/02a7aae3fe3692a58e8066b2c9e11f72cba3891d3763ffe6944b7e56e9768202/diff",
+            "WorkDir": "/var/lib/docker/overlay2/02a7aae3fe3692a58e8066b2c9e11f72cba3891d3763ffe6944b7e56e9768202/work"
+        },
+        "Name": "overlay2"
+    },
+    "Mounts": [
+        {
+            "Type": "bind",
+            "Source": "D:\\Projects\\DotNetCore\\NetCore8.Infrastructure\\Custom.Framework.Tests\\AWS\\volume",
+            "Destination": "/var/lib/localstack",
+            "Mode": "rw",
+            "RW": true,
+            "Propagation": "rprivate"
+        },
+        {
+            "Type": "bind",
+            "Source": "/var/run/docker.sock",
+            "Destination": "/var/run/docker.sock",
+            "Mode": "rw",
+            "RW": true,
+            "Propagation": "rprivate"
+        }
+    ],
+    "Config": {
+        "Hostname": "64ad39669ea4",
+        "Domainname": "",
+        "User": "",
+        "AttachStdin": false,
+        "AttachStdout": true,
+        "AttachStderr": true,
+        "ExposedPorts": {
+            "4510/tcp": {},
+            "4511/tcp": {},
+            "4512/tcp": {},
+            "4513/tcp": {},
+            "4514/tcp": {},
+            "4515/tcp": {},
+            "4516/tcp": {},
+            "4517/tcp": {},
+            "4518/tcp": {},
+            "4519/tcp": {},
+            "4520/tcp": {},
+            "4521/tcp": {},
+            "4522/tcp": {},
+            "4523/tcp": {},
+            "4524/tcp": {},
+            "4525/tcp": {},
+            "4526/tcp": {},
+            "4527/tcp": {},
+            "4528/tcp": {},
+            "4529/tcp": {},
+            "4530/tcp": {},
+            "4531/tcp": {},
+            "4532/tcp": {},
+            "4533/tcp": {},
+            "4534/tcp": {},
+            "4535/tcp": {},
+            "4536/tcp": {},
+            "4537/tcp": {},
+            "4538/tcp": {},
+            "4539/tcp": {},
+            "4540/tcp": {},
+            "4541/tcp": {},
+            "4542/tcp": {},
+            "4543/tcp": {},
+            "4544/tcp": {},
+            "4545/tcp": {},
+            "4546/tcp": {},
+            "4547/tcp": {},
+            "4548/tcp": {},
+            "4549/tcp": {},
+            "4550/tcp": {},
+            "4551/tcp": {},
+            "4552/tcp": {},
+            "4553/tcp": {},
+            "4554/tcp": {},
+            "4555/tcp": {},
+            "4556/tcp": {},
+            "4557/tcp": {},
+            "4558/tcp": {},
+            "4559/tcp": {},
+            "4566/tcp": {},
+            "5678/tcp": {}
+        },
+        "Tty": false,
+        "OpenStdin": false,
+        "StdinOnce": false,
+        "Env": [
+            "DOCKER_HOST=unix:///var/run/docker.sock",
+            "AWS_ACCESS_KEY_ID=test",
+            "EAGER_SERVICE_LOADING=1",
+            "LAMBDA_EXECUTOR=local",
+            "LOCALSTACK_AUTH_TOKEN=test",
+            "AWS_SECRET_ACCESS_KEY=test",
+            "DEBUG=1",
+            "RDS_PG_CUSTOM_VERSIONS=16.1",
+            "SERVICES=sqs,rds,dynamodb,s3",
+            "SQS_ENDPOINT_STRATEGY=path",
+            "AWS_DEFAULT_REGION=us-east-1",
+            "PERSISTENCE=0",
+            "PATH=/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+            "GPG_KEY=7169605F62C751356D054A26A821E680E5FA6305",
+            "PYTHON_VERSION=3.13.7",
+            "PYTHON_SHA256=5462f9099dfd30e238def83c71d91897d8caa5ff6ebc7a50f14d4802cdaaa79a",
+            "LANG=C.UTF-8",
+            "USER=localstack",
+            "PYTHONUNBUFFERED=1",
+            "LOCALSTACK_BUILD_DATE=2025-10-13",
+            "LOCALSTACK_BUILD_GIT_HASH=343d43640",
+            "LOCALSTACK_BUILD_VERSION=4.9.3.dev26"
+        ],
+        "Cmd": null,
+        "Healthcheck": {
+            "Test": [
+                "CMD",
+                "curl",
+                "-f",
+                "http://localhost:4566/_localstack/health"
+            ],
+            "Interval": 10000000000,
+            "Timeout": 5000000000,
+            "StartPeriod": 30000000000,
+            "Retries": 5
+        },
+        "Image": "localstack/localstack:latest",
+        "Volumes": {
+            "/var/lib/localstack": {}
+        },
+        "WorkingDir": "/opt/code/localstack/",
+        "Entrypoint": [
+            "docker-entrypoint.sh"
+        ],
+        "OnBuild": null,
+        "Labels": {
+            "authors": "LocalStack Contributors",
+            "com.docker.compose.config-hash": "ac8cf09eeab773f9f0a367851e1ac42cf0d1751e6886368c1c59624ed3b8dd19",
+            "com.docker.compose.container-number": "1",
+            "com.docker.compose.depends_on": "",
+            "com.docker.compose.image": "sha256:e2a3085b343ab866b1eaa1cae3d222ac5d504bb736897b33a3687f1460273e87",
+            "com.docker.compose.oneoff": "False",
+            "com.docker.compose.project": "aws",
+            "com.docker.compose.project.config_files": "D:\\Projects\\DotNetCore\\NetCore8.Infrastructure\\Custom.Framework.Tests\\AWS\\docker-compose.yaml",
+            "com.docker.compose.project.environment_file": "D:\\Projects\\DotNetCore\\NetCore8.Infrastructure\\Custom.Framework.Tests\\AWS\\env",
+            "com.docker.compose.project.working_dir": "D:\\Projects\\DotNetCore\\NetCore8.Infrastructure\\Custom.Framework.Tests\\AWS",
+            "com.docker.compose.service": "localstack",
+            "com.docker.compose.version": "2.40.0",
+            "description": "LocalStack Docker image",
+            "maintainer": "LocalStack Team (info@localstack.cloud)"
+        },
+        "StopTimeout": 1
+    },
+    "NetworkSettings": {
+        "Bridge": "",
+        "SandboxID": "",
+        "SandboxKey": "",
+        "Ports": {},
+        "HairpinMode": false,
+        "LinkLocalIPv6Address": "",
+        "LinkLocalIPv6PrefixLen": 0,
+        "SecondaryIPAddresses": null,
+        "SecondaryIPv6Addresses": null,
+        "EndpointID": "",
+        "Gateway": "",
+        "GlobalIPv6Address": "",
+        "GlobalIPv6PrefixLen": 0,
+        "IPAddress": "",
+        "IPPrefixLen": 0,
+        "IPv6Gateway": "",
+        "MacAddress": "",
+        "Networks": {
+            "aws_localstack-network": {
+                "IPAMConfig": null,
+                "Links": null,
+                "Aliases": [
+                    "localstack-main",
+                    "localstack"
+                ],
+                "MacAddress": "",
+                "DriverOpts": null,
+                "GwPriority": 0,
+                "NetworkID": "e6fef426fc0fe919f8fc576ba91e7bdddedca501a718ea8bda065e8ffa0bd794",
+                "EndpointID": "",
+                "Gateway": "",
+                "IPAddress": "",
+                "IPPrefixLen": 0,
+                "IPv6Gateway": "",
+                "GlobalIPv6Address": "",
+                "GlobalIPv6PrefixLen": 0,
+                "DNSNames": [
+                    "localstack-main",
+                    "localstack",
+                    "64ad39669ea4"
+                ]
+            }
+        }
+    }
+}

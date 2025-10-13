@@ -34,6 +34,17 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- JSON files should not be compiled as C# code -->
+    <None Include="AWS\Localstack\env.example" />
+    <None Include="AWS\Localstack\SQS\_TEST_SUMMARY.md" />
+    <None Include="AWS\Localstack\SQS\_INSPECT_ANALYSIS.md" />
+    <None Include="AWS\Localstack\SQS\lockstack-sqs-init.inspect.json" />
+    <None Include="AWS\Localstack\SQS\lockstack-main.inspect.json">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Include="appsettings.Development.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -50,6 +61,29 @@
 
   <ItemGroup>
     <None Include=".gitignore" />
+    <None Include="AWS\Localstack\Aurora\aurora-first-time-setup.bat" />
+    <None Include="AWS\Localstack\Aurora\aurora-init.sh" />
+    <None Include="AWS\Localstack\Aurora\aurora-init.sql" />
+    <None Include="AWS\Localstack\Aurora\aurora-local.ps1" />
+    <None Include="AWS\Localstack\Aurora\aurora-on-start.bat" />
+    <None Include="AWS\Localstack\Aurora\aurora-on-stop.bat" />
+    <None Include="AWS\Localstack\Aurora\sample-batch.json" />
+    <None Include="AWS\Localstack\Aurora\_QUICK_REFERENCE.md" />
+    <None Include="AWS\Localstack\Aurora\_README.md" />
+    <None Include="AWS\Localstack\docker-compose.localstack.yaml" />
+    <None Include="AWS\docker-compose.yaml" />
+    <None Include="AWS\Localstack\locakstack.bat" />
+    <None Include="AWS\Localstack\SQS\_README.md" />
+    <None Include="AWS\Localstack\SQS\sqs-init.sh" />
+    <None Include="AWS\Localstack\SQS\sqs-local.ps1" />
+    <None Include="AWS\Localstack\SQS\sqs-on-start.bat" />
+    <None Include="AWS\Localstack\SQS\sqs-on-stop.bat" />
+    <None Include="AWS\Localstack\SQS\_QUICK_REFERENCE.md" />
+    <None Include="AWS\Localstack\volume\cache\machine.json" />
+    <None Include="AWS\Localstack\volume\cache\server.test.pem" />
+    <None Include="AWS\Localstack\volume\cache\server.test.pem.crt" />
+    <None Include="AWS\Localstack\volume\cache\server.test.pem.key" />
+    <None Include="Dapr\README.md" />
     <None Include="Monitoring\cleanup-and-restart.bat" />
     <None Include="Monitoring\diagnose-prometheus.bat" />
     <None Include="Monitoring\Grafana\dashboards\.gitkeep" />
@@ -70,6 +104,12 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.0" />
     <PackageReference Include="Microsoft.VisualStudio.DiagnosticsHub.BenchmarkDotNetDiagnosers" Version="18.0.36525.3" />
     <PackageReference Include="Moq" Version="4.20.72" />
+    <PackageReference Include="Testcontainers" Version="4.7.0" />
+    <PackageReference Include="Testcontainers.LocalStack" Version="4.7.0" />
+    <PackageReference Include="Testcontainers.PostgreSql" Version="4.7.0" />
+    <PackageReference Include="Testcontainers.Redis" Version="4.7.0" />
+    <PackageReference Include="Dapr.Client" Version="1.14.0" />
+    <PackageReference Include="Dapr.AspNetCore" Version="1.14.0" />
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -84,6 +124,11 @@
   <ItemGroup>
     <ProjectReference Include="..\Custom.Framework.TestFactory\Custom.Framework.TestFactory.csproj" />
     <ProjectReference Include="..\Custom.Framework\Custom.Framework.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="AWS\Localstack\Aurora\Postgres-data\" />
+    <Folder Include="gRPC\" />
   </ItemGroup>
 
 </Project>

@@ -1,0 +1,100 @@
+version: '3.9'
+services:
+  localstack:
+    image: localstack/localstack:latest
+    container_name: localstack-main
+    hostname: b7fe3fd787a6
+    networks:
+      localstack-network:
+        aliases:
+          - localstack-main
+          - localstack
+    ports:
+      - "4510:4510"
+      - "4511:4511"
+      - "4512:4512"
+      - "4513:4513"
+      - "4514:4514"
+      - "4515:4515"
+      - "4516:4516"
+      - "4517:4517"
+      - "4518:4518"
+      - "4519:4519"
+      - "4520:4520"
+      - "4521:4521"
+      - "4522:4522"
+      - "4523:4523"
+      - "4524:4524"
+      - "4525:4525"
+      - "4526:4526"
+      - "4527:4527"
+      - "4528:4528"
+      - "4529:4529"
+      - "4530:4530"
+      - "4531:4531"
+      - "4532:4532"
+      - "4533:4533"
+      - "4534:4534"
+      - "4535:4535"
+      - "4536:4536"
+      - "4537:4537"
+      - "4538:4538"
+      - "4539:4539"
+      - "4540:4540"
+      - "4541:4541"
+      - "4542:4542"
+      - "4543:4543"
+      - "4544:4544"
+      - "4545:4545"
+      - "4546:4546"
+      - "4547:4547"
+      - "4548:4548"
+      - "4549:4549"
+      - "4550:4550"
+      - "4551:4551"
+      - "4552:4552"
+      - "4553:4553"
+      - "4554:4554"
+      - "4555:4555"
+      - "4556:4556"
+      - "4557:4557"
+      - "4558:4558"
+      - "4559:4559"
+      - "4566:4566"
+    environment:
+      - DEBUG=1
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - SERVICES=sqs,rds,dynamodb,s3
+      - SQS_ENDPOINT_STRATEGY=path
+      - LOCALSTACK_AUTH_TOKEN=
+      - AWS_SECRET_ACCESS_KEY=test
+      - PERSISTENCE=0
+      - AWS_DEFAULT_REGION=us-east-1
+      - RDS_PG_CUSTOM_VERSIONS=16.1
+      - AWS_ACCESS_KEY_ID=test
+      - LAMBDA_EXECUTOR=local
+      - EAGER_SERVICE_LOADING=1
+      - PATH=/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      - GPG_KEY=7169605F62C751356D054A26A821E680E5FA6305
+      - PYTHON_VERSION=3.13.7
+      - PYTHON_SHA256=5462f9099dfd30e238def83c71d91897d8caa5ff6ebc7a50f14d4802cdaaa79a
+      - LANG=C.UTF-8
+      - USER=localstack
+      - PYTHONUNBUFFERED=1
+      - LOCALSTACK_BUILD_DATE=2025-10-13
+      - LOCALSTACK_BUILD_GIT_HASH=343d43640
+      - LOCALSTACK_BUILD_VERSION=4.9.3.dev26
+    volumes:
+      - D:\Projects\DotNetCore\NetCore8.Infrastructure\Custom.Framework\Aws\LocalStack\volume:/var/lib/localstack:rw
+      - /var/run/docker.sock:/var/run/docker.sock:rw
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: "no"
+
+networks:
+  localstack-network:
+    driver: bridge

@@ -1,0 +1,238 @@
+﻿{
+  "Id": "5dc59af0ffaeaef64b6430e8f17325d7b0a024bdf1ebe5a85b80b909c77b674e",
+  "Created": "2025-10-20T13:22:56.205586058Z",
+  "Path": "/bin/sh",
+  "Args": [
+    "-c",
+    "set -e; cp /init/sqs-init.sh /tmp/sqs-init.sh; sed -i 's/\\r$//' /tmp/sqs-init.sh; /bin/sh /tmp/sqs-init.sh && echo 'SQS init done' || (echo 'SQS init failed' >&2; exit 1)"
+  ],
+  "State": {
+    "Status": "exited",
+    "Running": false,
+    "Paused": false,
+    "Restarting": false,
+    "OOMKilled": false,
+    "Dead": false,
+    "Pid": 0,
+    "ExitCode": 0,
+    "Error": "",
+    "StartedAt": "2025-10-20T13:30:11.390053895Z",
+    "FinishedAt": "2025-10-20T13:30:40.904320186Z"
+  },
+  "Image": "sha256:051f36d64212fb025639c2b36a2ea1fa78d29408c9e6b0a1b92b0773045a4453",
+  "ResolvConfPath": "/var/lib/docker/containers/5dc59af0ffaeaef64b6430e8f17325d7b0a024bdf1ebe5a85b80b909c77b674e/resolv.conf",
+  "HostnamePath": "/var/lib/docker/containers/5dc59af0ffaeaef64b6430e8f17325d7b0a024bdf1ebe5a85b80b909c77b674e/hostname",
+  "HostsPath": "/var/lib/docker/containers/5dc59af0ffaeaef64b6430e8f17325d7b0a024bdf1ebe5a85b80b909c77b674e/hosts",
+  "LogPath": "/var/lib/docker/containers/5dc59af0ffaeaef64b6430e8f17325d7b0a024bdf1ebe5a85b80b909c77b674e/5dc59af0ffaeaef64b6430e8f17325d7b0a024bdf1ebe5a85b80b909c77b674e-json.log",
+  "Name": "/sqs-init",
+  "RestartCount": 0,
+  "Driver": "overlay2",
+  "Platform": "linux",
+  "MountLabel": "",
+  "ProcessLabel": "",
+  "AppArmorProfile": "",
+  "ExecIDs": null,
+  "HostConfig": {
+    "Binds": [
+      "D:\\Projects\\DotNetCore\\NetCore8.Infrastructure\\Custom.Framework.Tests\\AWS\\SQS\\sqs-init.sh:/init/sqs-init.sh:rw"
+    ],
+    "ContainerIDFile": "",
+    "LogConfig": {
+      "Type": "json-file",
+      "Config": {}
+    },
+    "NetworkMode": "aws_localstack-network",
+    "PortBindings": {},
+    "RestartPolicy": {
+      "Name": "no",
+      "MaximumRetryCount": 0
+    },
+    "AutoRemove": false,
+    "VolumeDriver": "",
+    "VolumesFrom": null,
+    "ConsoleSize": [
+      0,
+      0
+    ],
+    "CapAdd": null,
+    "CapDrop": null,
+    "CgroupnsMode": "host",
+    "Dns": null,
+    "DnsOptions": null,
+    "DnsSearch": null,
+    "ExtraHosts": [],
+    "GroupAdd": null,
+    "IpcMode": "private",
+    "Cgroup": "",
+    "Links": null,
+    "OomScoreAdj": 0,
+    "PidMode": "",
+    "Privileged": false,
+    "PublishAllPorts": false,
+    "ReadonlyRootfs": false,
+    "SecurityOpt": null,
+    "UTSMode": "",
+    "UsernsMode": "",
+    "ShmSize": 67108864,
+    "Runtime": "runc",
+    "Isolation": "",
+    "CpuShares": 0,
+    "Memory": 0,
+    "NanoCpus": 0,
+    "CgroupParent": "",
+    "BlkioWeight": 0,
+    "BlkioWeightDevice": null,
+    "BlkioDeviceReadBps": null,
+    "BlkioDeviceWriteBps": null,
+    "BlkioDeviceReadIOps": null,
+    "BlkioDeviceWriteIOps": null,
+    "CpuPeriod": 0,
+    "CpuQuota": 0,
+    "CpuRealtimePeriod": 0,
+    "CpuRealtimeRuntime": 0,
+    "CpusetCpus": "",
+    "CpusetMems": "",
+    "Devices": null,
+    "DeviceCgroupRules": null,
+    "DeviceRequests": null,
+    "MemoryReservation": 0,
+    "MemorySwap": 0,
+    "MemorySwappiness": null,
+    "OomKillDisable": false,
+    "PidsLimit": null,
+    "Ulimits": null,
+    "CpuCount": 0,
+    "CpuPercent": 0,
+    "IOMaximumIOps": 0,
+    "IOMaximumBandwidth": 0,
+    "MaskedPaths": [
+      "/proc/asound",
+      "/proc/acpi",
+      "/proc/interrupts",
+      "/proc/kcore",
+      "/proc/keys",
+      "/proc/latency_stats",
+      "/proc/timer_list",
+      "/proc/timer_stats",
+      "/proc/sched_debug",
+      "/proc/scsi",
+      "/sys/firmware",
+      "/sys/devices/virtual/powercap"
+    ],
+    "ReadonlyPaths": [
+      "/proc/bus",
+      "/proc/fs",
+      "/proc/irq",
+      "/proc/sys",
+      "/proc/sysrq-trigger"
+    ]
+  },
+  "GraphDriver": {
+    "Data": {
+      "ID": "5dc59af0ffaeaef64b6430e8f17325d7b0a024bdf1ebe5a85b80b909c77b674e",
+      "LowerDir": "/var/lib/docker/overlay2/03ee0d1ec1e0b210e496e8e5797b2d9e7ba9a08ae40d0773d1fe025855fa95be-init/diff:/var/lib/docker/overlay2/9e838b6e01701f7b3fb9378745a95966bb08692d8618ba8f05596f680771f372/diff:/var/lib/docker/overlay2/2d0da6072bd6f29dfcb7221dab392b75a5f718e5c5cccb00275b26158ba69e7d/diff:/var/lib/docker/overlay2/fcde0ab310654cb17bdb99ef163f6e11a1167d7714d525cd075c8d86c5ba6e0e/diff:/var/lib/docker/overlay2/c764a54e0401fd2f10cd1a25589b20f4223a7539e10bb5e639abc29b67f849a5/diff:/var/lib/docker/overlay2/40c3e86095991b638d6ec57a977db55dd98962fd2d9593eb404bbe32a33acba0/diff",
+      "MergedDir": "/var/lib/docker/overlay2/03ee0d1ec1e0b210e496e8e5797b2d9e7ba9a08ae40d0773d1fe025855fa95be/merged",
+      "UpperDir": "/var/lib/docker/overlay2/03ee0d1ec1e0b210e496e8e5797b2d9e7ba9a08ae40d0773d1fe025855fa95be/diff",
+      "WorkDir": "/var/lib/docker/overlay2/03ee0d1ec1e0b210e496e8e5797b2d9e7ba9a08ae40d0773d1fe025855fa95be/work"
+    },
+    "Name": "overlay2"
+  },
+  "Mounts": [
+    {
+      "Type": "bind",
+      "Source": "D:\\Projects\\DotNetCore\\NetCore8.Infrastructure\\Custom.Framework.Tests\\AWS\\SQS\\sqs-init.sh",
+      "Destination": "/init/sqs-init.sh",
+      "Mode": "rw",
+      "RW": true,
+      "Propagation": "rprivate"
+    }
+  ],
+  "Config": {
+    "Hostname": "5dc59af0ffae",
+    "Domainname": "",
+    "User": "",
+    "AttachStdin": false,
+    "AttachStdout": true,
+    "AttachStderr": true,
+    "Tty": false,
+    "OpenStdin": false,
+    "StdinOnce": false,
+    "Env": [
+      "AWS_ACCESS_KEY_ID=test",
+      "AWS_SECRET_ACCESS_KEY=test",
+      "LOCALSTACK_ENDPOINT=http://localstack:4566",
+      "AWS_DEFAULT_REGION=us-east-1",
+      "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+    ],
+    "Cmd": [
+      "set -e; cp /init/sqs-init.sh /tmp/sqs-init.sh; sed -i 's/\\r$//' /tmp/sqs-init.sh; /bin/sh /tmp/sqs-init.sh && echo 'SQS init done' || (echo 'SQS init failed' >&2; exit 1)"
+    ],
+    "Image": "amazon/aws-cli:latest",
+    "Volumes": null,
+    "WorkingDir": "/aws",
+    "Entrypoint": [
+      "/bin/sh",
+      "-c"
+    ],
+    "OnBuild": null,
+    "Labels": {
+      "com.docker.compose.config-hash": "f7231b08bd1deaa8a6b4cb9b4d67f7a78a90bbd04e9ed33d91b4f5cca0e468c1",
+      "com.docker.compose.container-number": "1",
+      "com.docker.compose.depends_on": "",
+      "com.docker.compose.image": "sha256:051f36d64212fb025639c2b36a2ea1fa78d29408c9e6b0a1b92b0773045a4453",
+      "com.docker.compose.oneoff": "False",
+      "com.docker.compose.project": "aws",
+      "com.docker.compose.project.config_files": "D:\\Projects\\DotNetCore\\NetCore8.Infrastructure\\Custom.Framework.Tests\\AWS\\docker-compose.yaml",
+      "com.docker.compose.project.environment_file": "D:\\Projects\\DotNetCore\\NetCore8.Infrastructure\\Custom.Framework.Tests\\AWS\\env",
+      "com.docker.compose.project.working_dir": "D:\\Projects\\DotNetCore\\NetCore8.Infrastructure\\Custom.Framework.Tests\\AWS",
+      "com.docker.compose.replace": "sqs-init",
+      "com.docker.compose.service": "sqs-init",
+      "com.docker.compose.version": "2.40.0"
+    },
+    "StopTimeout": 1
+  },
+  "NetworkSettings": {
+    "Bridge": "",
+    "SandboxID": "",
+    "SandboxKey": "",
+    "Ports": {},
+    "HairpinMode": false,
+    "LinkLocalIPv6Address": "",
+    "LinkLocalIPv6PrefixLen": 0,
+    "SecondaryIPAddresses": null,
+    "SecondaryIPv6Addresses": null,
+    "EndpointID": "",
+    "Gateway": "",
+    "GlobalIPv6Address": "",
+    "GlobalIPv6PrefixLen": 0,
+    "IPAddress": "",
+    "IPPrefixLen": 0,
+    "IPv6Gateway": "",
+    "MacAddress": "",
+    "Networks": {
+      "aws_localstack-network": {
+        "IPAMConfig": null,
+        "Links": null,
+        "Aliases": [
+          "sqs-init",
+          "sqs-init"
+        ],
+        "MacAddress": "",
+        "DriverOpts": null,
+        "GwPriority": 0,
+        "NetworkID": "e6fef426fc0fe919f8fc576ba91e7bdddedca501a718ea8bda065e8ffa0bd794",
+        "EndpointID": "",
+        "Gateway": "",
+        "IPAddress": "",
+        "IPPrefixLen": 0,
+        "IPv6Gateway": "",
+        "GlobalIPv6Address": "",
+        "GlobalIPv6PrefixLen": 0,
+        "DNSNames": [
+          "sqs-init",
+          "5dc59af0ffae"
+        ]
+      }
+    }
+  }
+}
