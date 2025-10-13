@@ -7,6 +7,7 @@
       - "127.0.0.1:4510-4559:4510-4559"  # external services port range
     environment:
       # LocalStack configuration: https://docs.localstack.cloud/references/configuration/
+      - LOCALSTACK_AUTH_TOKEN=${LOCALSTACK_AUTH_TOKEN}
       - SERVICES=sqs,rds,dynamodb,s3         # Enable SQS, RDS (Aurora), and other AWS services
       - DEBUG=${DEBUG:-1}                     # Enable debug mode for learning
       - PERSISTENCE=${PERSISTENCE:-0}         # Disable persistence for clean testing
@@ -16,12 +17,11 @@
       - AWS_ACCESS_KEY_ID=test
       - AWS_SECRET_ACCESS_KEY=test
       - EAGER_SERVICE_LOADING=1               # Load services immediately
-      - SQS_ENDPOINT_STRATEGY=domain          # Use domain-based endpoint strategy
+      - SQS_ENDPOINT_STRATEGY=path            # Use path-based endpoints (more reliable on Windows/proxy)
       - RDS_PG_CUSTOM_VERSIONS=16.1           # PostgreSQL 16 for Aurora compatibility
     volumes:
       - "${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"
-      - "./SQS_init-aws.sh:/etc/localstack/init/ready.d/init-sqs.sh"  # SQS initialization
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
       interval: 10s
@@ -30,6 +30,28 @@
       start_period: 30s
     networks:
       - localstack-network
+
+  # One-shot init container to create SQS queues using aws-cli against LocalStack
+  sqs-init:
+    image: amazon/aws-cli:latest
+    profiles: ["init"]
+    container_name: sqs-init
+    depends_on:
+      localstack:
+        condition: service_healthy
+    environment:
+      - AWS_DEFAULT_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - LOCALSTACK_ENDPOINT=http://localstack:4566
+    volumes:
+      - ./SQS/sqs-init.sh:/init/sqs-init.sh
+    entrypoint: ["/bin/sh", "-c"]
+    # command: ["set -e; sed -i 's/\\r$//' /init/sqs-init.sh; /bin/sh /init/sqs-init.sh && echo 'SQS init done' || (echo 'SQS init failed' >&2; exit 1)"]
+    command: ["set -e; cp /init/sqs-init.sh /tmp/sqs-init.sh; sed -i 's/\\r$//' /tmp/sqs-init.sh; /bin/sh /tmp/sqs-init.sh && echo 'SQS init done' || (echo 'SQS init failed' >&2; exit 1)"]
+    networks:
+      - localstack-network
+    restart: "no"
 
   # PostgreSQL for local Aurora simulation
   aurora-postgres:

@@ -22,7 +22,7 @@ LOCALSTACK_VOLUME_DIR=./volume
 AWS_DEFAULT_REGION=us-east-1
 AWS_ACCESS_KEY_ID=test
 AWS_SECRET_ACCESS_KEY=test
-LOCALSTACK_AUTH_TOKEN=your-token-here
+LOCALSTACK_AUTH_TOKEN=test
 
 # LocalStack Services
 # Comma-separated list of AWS services to run

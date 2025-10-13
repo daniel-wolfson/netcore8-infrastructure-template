@@ -130,11 +130,15 @@ public class SqsClient : ISqsClient, IDisposable
             try
             {
                 var response = await _sqsClient.SendMessageBatchAsync(request, cancellationToken);
-                allSuccessful.AddRange(response.Successful);
-                allFailed.AddRange(response.Failed);
+
+                if (response.Successful != null)
+                    allSuccessful.AddRange(response.Successful);
+
+                if (response.Failed != null)
+                    allFailed.AddRange(response.Failed);
 
                 _logger.LogDebug("Sent batch of {Count} messages to queue {QueueName}, {Successful} successful, {Failed} failed",
-                    entries.Count, queueName, response.Successful.Count, response.Failed.Count);
+                    entries.Count, queueName, response.Successful?.Count ?? 0, response.Failed?.Count ?? 0);
             }
             catch (Exception ex)
             {

@@ -44,7 +44,7 @@ echo [OK] .NET SDK is installed
 REM Start LocalStack for SQS
 echo.
 echo [4/5] Starting LocalStack for SQS...
-docker-compose up -d localstack
+docker compose --env-file ../env -f ../docker-compose.yaml up -d localstack
 
 if errorlevel 1 (
     echo [X] Failed to start LocalStack
@@ -55,6 +55,19 @@ if errorlevel 1 (
 echo [OK] LocalStack container started
 echo [INFO] Waiting 15 seconds for initialization...
 timeout /t 15 /nobreak >nul
+
+REM Start LocalStack for SQS-init
+echo.
+echo [4/5] Starting LocalStack for SQS-init...
+docker compose --env-file ../env -f ../docker-compose.yaml up  --force-recreate --no-deps --wait sqs-init
+
+if errorlevel 1 (
+    echo [X] Failed to start LocalStack
+    pause
+    exit /b 1
+)
+
+echo [OK] SQS-init container started
 
 REM Verify Health
 echo.

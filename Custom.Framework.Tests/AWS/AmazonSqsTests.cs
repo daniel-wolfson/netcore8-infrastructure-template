@@ -2,9 +2,6 @@ using Amazon.SQS;
 using Amazon.SQS.Model;
 using Custom.Framework.Aws.AmazonSQS;
 using Custom.Framework.Aws.AmazonSQS.Models;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using Xunit.Abstractions;
 
@@ -366,6 +363,7 @@ public class AmazonSqsTests(ITestOutputHelper output) : IAsyncLifetime
         sw.Stop();
 
         // Assert
+        await Task.Delay(10000).WaitAsync(CancellationToken.None); // Wait for messages to be available
         Assert.Equal(totalMessages, successCount);
         var throughput = totalMessages / sw.Elapsed.TotalSeconds;
         _logger.LogInformation(
