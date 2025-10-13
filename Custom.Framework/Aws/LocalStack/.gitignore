@@ -1,12 +1,3 @@
-# Ignore Grafana and Prometheus data
-data/
-*.db
-*.db-shm
-*.db-wal
-
-# Ignore custom dashboard backups
-grafana/dashboards/*.json.backup
-
 # Ignore logs
 *.log
 logs/

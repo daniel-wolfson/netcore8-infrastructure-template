@@ -24,6 +24,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- LocalStack configuration files - not compiled -->
+    <None Include="Aws\LocalStack\**\*" />
     <Compile Include="Models\Main\TranslatesPackageRequestValidator.cs" />
     <Compile Include="Models\Main\TranslationPackageShowRequest.cs" />
     <Compile Include="Models\Main\TranslationsPackageRequest.cs" />
@@ -35,6 +37,7 @@
     <PackageReference Include="Autofac.Extensions.DependencyInjection" Version="10.0.0" />
     <PackageReference Include="AutoMapper" Version="15.0.1" />
     <PackageReference Include="AWSSDK.DynamoDBv2" Version="4.0.7" />
+    <PackageReference Include="AWSSDK.SQS" Version="4.0.1.10" />
     <PackageReference Include="Azure.Monitor.OpenTelemetry.AspNetCore" Version="1.3.0" />
     <PackageReference Include="Azure.Monitor.OpenTelemetry.Exporter" Version="1.4.0" />
     <PackageReference Include="Azure.Storage.Blobs" Version="12.25.1" />

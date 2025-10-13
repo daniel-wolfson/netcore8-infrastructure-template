@@ -1,0 +1,241 @@
+{
+  "AmazonSQS": {
+    "// Region": "AWS region where SQS queues are located",
+    "Region": "us-east-1",
+    
+    "// AccessKey": "AWS Access Key (optional if using IAM roles/instance profiles)",
+    "AccessKey": null,
+    
+    "// SecretKey": "AWS Secret Key (optional if using IAM roles/instance profiles)",
+    "SecretKey": null,
+    
+    "// ServiceUrl": "Custom endpoint for local SQS (e.g., LocalStack), leave null for AWS",
+    "ServiceUrl": null,
+    
+    "// DefaultQueueName": "Default queue name for operations",
+    "DefaultQueueName": "default-queue",
+    
+    "// EnableBatchProcessing": "Enable batch operations for better performance",
+    "EnableBatchProcessing": true,
+    
+    "// MaxBatchSize": "Maximum items per batch (SQS limit is 10)",
+    "MaxBatchSize": 10,
+    
+    "// MaxNumberOfMessages": "Maximum messages to receive per request (1-10)",
+    "MaxNumberOfMessages": 10,
+    
+    "// MaxRetries": "Number of automatic retries for failed operations",
+    "MaxRetries": 3,
+    
+    "// TimeoutSeconds": "Request timeout in seconds",
+    "TimeoutSeconds": 30,
+    
+    "// EnableMetrics": "Enable CloudWatch metrics collection",
+    "EnableMetrics": true,
+    
+    "// WaitTimeSeconds": "Long polling wait time (0-20 seconds)",
+    "WaitTimeSeconds": 20,
+    
+    "// VisibilityTimeoutSeconds": "Message visibility timeout (0-43200 seconds)",
+    "VisibilityTimeoutSeconds": 30,
+    
+    "// EnableFifoQueues": "Enable FIFO queue support",
+    "EnableFifoQueues": false,
+    
+    "// EnableContentBasedDeduplication": "Enable content-based deduplication for FIFO queues",
+    "EnableContentBasedDeduplication": true,
+    
+    "// EnableDeadLetterQueue": "Enable dead letter queue for failed messages",
+    "EnableDeadLetterQueue": true,
+    
+    "// MaxReceiveCount": "Maximum receive count before moving to dead letter queue",
+    "MaxReceiveCount": 3,
+    
+    "// DeadLetterQueueSuffix": "Suffix for dead letter queue names",
+    "DeadLetterQueueSuffix": "-dlq"
+  },
+
+  "// Example configurations for different environments": "",
+  
+  "AmazonSQS:Production": {
+    "Region": "us-east-1",
+    "DefaultQueueName": "prod-orders",
+    "MaxNumberOfMessages": 10,
+    "WaitTimeSeconds": 20,
+    "VisibilityTimeoutSeconds": 60,
+    "EnableMetrics": true,
+    "EnableDeadLetterQueue": true,
+    "MaxReceiveCount": 5
+  },
+
+  "AmazonSQS:Staging": {
+    "Region": "us-west-2",
+    "DefaultQueueName": "staging-orders",
+    "MaxNumberOfMessages": 10,
+    "WaitTimeSeconds": 20,
+    "VisibilityTimeoutSeconds": 30,
+    "EnableMetrics": true,
+    "EnableDeadLetterQueue": true,
+    "MaxReceiveCount": 3
+  },
+
+  "AmazonSQS:Development": {
+    "Region": "us-east-1",
+    "ServiceUrl": "http://localhost:4566",
+    "AccessKey": "test",
+    "SecretKey": "test",
+    "DefaultQueueName": "dev-orders",
+    "MaxNumberOfMessages": 5,
+    "WaitTimeSeconds": 5,
+    "VisibilityTimeoutSeconds": 30,
+    "EnableMetrics": false,
+    "MaxRetries": 1
+  },
+
+  "// Sample queue configurations": "",
+  
+  "Queues": {
+    "Orders": {
+      "QueueName": "orders-queue",
+      "Type": "Standard",
+      "VisibilityTimeout": 60,
+      "MessageRetentionPeriod": 345600,
+      "MaximumMessageSize": 262144,
+      "DelaySeconds": 0,
+      "DeadLetterQueue": "orders-queue-dlq",
+      "MaxReceiveCount": 3,
+      "Description": "High-volume order processing queue"
+    },
+    
+    "OrdersFifo": {
+      "QueueName": "orders-queue.fifo",
+      "Type": "FIFO",
+      "FifoQueue": true,
+      "ContentBasedDeduplication": true,
+      "VisibilityTimeout": 60,
+      "MessageRetentionPeriod": 345600,
+      "DeadLetterQueue": "orders-queue-dlq.fifo",
+      "MaxReceiveCount": 3,
+      "Description": "FIFO order processing queue with guaranteed ordering"
+    },
+    
+    "Notifications": {
+      "QueueName": "notifications-queue",
+      "Type": "Standard",
+      "VisibilityTimeout": 30,
+      "MessageRetentionPeriod": 86400,
+      "MaximumMessageSize": 262144,
+      "DelaySeconds": 0,
+      "DeadLetterQueue": "notifications-queue-dlq",
+      "MaxReceiveCount": 5,
+      "Description": "Real-time notification delivery queue"
+    },
+    
+    "Jobs": {
+      "QueueName": "jobs-queue",
+      "Type": "Standard",
+      "VisibilityTimeout": 300,
+      "MessageRetentionPeriod": 1209600,
+      "MaximumMessageSize": 262144,
+      "DelaySeconds": 0,
+      "DeadLetterQueue": "jobs-queue-dlq",
+      "MaxReceiveCount": 3,
+      "Description": "Background job processing queue"
+    },
+    
+    "HighPriority": {
+      "QueueName": "high-priority-queue",
+      "Type": "Standard",
+      "VisibilityTimeout": 30,
+      "MessageRetentionPeriod": 86400,
+      "MaximumMessageSize": 262144,
+      "DelaySeconds": 0,
+      "DeadLetterQueue": "high-priority-queue-dlq",
+      "MaxReceiveCount": 5,
+      "Description": "High priority message processing"
+    }
+  },
+
+  "// Performance tuning recommendations": "",
+  "PerformanceTuning": {
+    "BatchSize": {
+      "Send": 10,
+      "Receive": 10,
+      "Delete": 10,
+      "Note": "SQS limits: 10 messages per batch operation"
+    },
+    "LongPolling": {
+      "Description": "Reduces empty responses and cost",
+      "WaitTimeSeconds": 20,
+      "Benefits": [
+        "Reduces API calls",
+        "Lowers costs",
+        "Eliminates false empty responses"
+      ]
+    },
+    "VisibilityTimeout": {
+      "Description": "Time a message is hidden after being received",
+      "Minimum": 0,
+      "Maximum": 43200,
+      "Recommended": "2x expected processing time",
+      "Examples": {
+        "FastProcessing": "30 seconds",
+        "StandardProcessing": "60 seconds",
+        "LongProcessing": "300 seconds"
+      }
+    },
+    "MessageRetention": {
+      "Minimum": 60,
+      "Maximum": 1209600,
+      "Default": 345600,
+      "Description": "How long messages are kept in seconds (1 min - 14 days)"
+    },
+    "Throughput": {
+      "Standard": {
+        "Requests": "Nearly unlimited",
+        "BatchSize": 10,
+        "Note": "Best for high throughput"
+      },
+      "FIFO": {
+        "Requests": "300 per second",
+        "BatchRequests": "3000 per second (with batching)",
+        "Note": "Guaranteed ordering and exactly-once processing"
+      }
+    },
+    "CostOptimization": {
+      "UseLongPolling": "Reduces empty receive requests",
+      "BatchOperations": "Sends/receives/deletes up to 10 messages at once",
+      "AppropriateDLQ": "Prevents infinite retries",
+      "MessageRetention": "Set based on business requirements"
+    }
+  },
+
+  "// Queue Types": "",
+  "QueueTypes": {
+    "Standard": {
+      "Ordering": "Best-effort ordering",
+      "Throughput": "Nearly unlimited",
+      "Delivery": "At-least-once delivery",
+      "UseCases": [
+        "High throughput applications",
+        "Order not critical",
+        "Tolerant to duplicates"
+      ]
+    },
+    "FIFO": {
+      "Ordering": "First-In-First-Out guaranteed",
+      "Throughput": "Up to 3,000 messages/second with batching",
+      "Delivery": "Exactly-once processing",
+      "UseCases": [
+        "Financial transactions",
+        "Order processing",
+        "Event sourcing"
+      ],
+      "Requirements": [
+        "Queue name must end with .fifo",
+        "MessageGroupId required",
+        "MessageDeduplicationId or ContentBasedDeduplication required"
+      ]
+    }
+  }
+}

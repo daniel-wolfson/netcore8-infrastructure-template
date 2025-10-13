@@ -1,0 +1,19 @@
+{
+  "Entries": [
+    {
+      "Id": "msg1",
+      "MessageBody": "{\"OrderId\":\"ORD-001\",\"CustomerId\":\"CUST-001\",\"TotalAmount\":99.99,\"Status\":\"Pending\"}",
+      "DelaySeconds": 0
+    },
+    {
+      "Id": "msg2",
+      "MessageBody": "{\"OrderId\":\"ORD-002\",\"CustomerId\":\"CUST-002\",\"TotalAmount\":149.99,\"Status\":\"Pending\"}",
+      "DelaySeconds": 0
+    },
+    {
+      "Id": "msg3",
+      "MessageBody": "{\"OrderId\":\"ORD-003\",\"CustomerId\":\"CUST-003\",\"TotalAmount\":199.99,\"Status\":\"Pending\"}",
+      "DelaySeconds": 0
+    }
+  ]
+}
