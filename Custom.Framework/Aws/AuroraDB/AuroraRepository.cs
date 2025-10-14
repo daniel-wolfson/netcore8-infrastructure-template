@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using System.Linq.Expressions;
@@ -403,27 +403,35 @@ public class AuroraRepository<T> : IAuroraRepository<T> where T : class
     }
 
     public virtual async Task<TResult> ExecuteInTransactionAsync<TResult>(
-        Func<Task<TResult>> operation,
-        CancellationToken cancellationToken = default)
+    Func<Task<TResult>> operation,
+    CancellationToken cancellationToken = default)
     {
         var startedTime = Stopwatch.GetTimestamp();
-        using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
-        try
+
+        // Create execution strategy
+        var strategy = _context.Database.CreateExecutionStrategy();
+
+        // Execute full transaction inside the strategy
+        return await strategy.ExecuteAsync(async () =>
         {
-            var result = await operation();
-            await transaction.CommitAsync(cancellationToken);
-            
-            _logger.LogDebug("Transaction completed successfully in {ElapsedMs}ms",
-                Stopwatch.GetElapsedTime(startedTime).TotalMilliseconds);
-            
-            return result;
-        }
-        catch (Exception ex)
-        {
-            await transaction.RollbackAsync(cancellationToken);
-            _logger.LogError(ex, "Transaction rolled back due to error");
-            throw;
-        }
+            using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+            try
+            {
+                var result = await operation();
+                await transaction.CommitAsync(cancellationToken);
+
+                _logger.LogDebug("Transaction completed successfully in {ElapsedMs}ms",
+                    Stopwatch.GetElapsedTime(startedTime).TotalMilliseconds);
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                _logger.LogError(ex, "Transaction rolled back due to error");
+                throw;
+            }
+        });
     }
 
     #endregion

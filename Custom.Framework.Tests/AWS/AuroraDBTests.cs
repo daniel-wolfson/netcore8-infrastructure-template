@@ -1,5 +1,10 @@
+﻿using Confluent.Kafka;
 using Custom.Framework.Aws.AuroraDB;
 using Custom.Framework.Aws.AuroraDB.Models;
+using Custom.Framework.Monitoring.Prometheus;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Xunit.Abstractions;
 
@@ -12,75 +17,84 @@ namespace Custom.Framework.Tests.AWS;
 public class AuroraDBTests(ITestOutputHelper output) : IAsyncLifetime
 {
     private readonly ITestOutputHelper _output = output;
-    private ServiceProvider _provider = default!;
+    private IHost _testHost = default!;
     private AuroraDbContext _context = default!;
 
     public async Task InitializeAsync()
     {
-        var services = new ServiceCollection();
+        _testHost = await new HostBuilder()
+            .ConfigureAppConfiguration((context, config) =>
+            {
+                var baseConfig = config
+                    .AddJsonFile("appsettings.json", optional: true)
+                    .AddJsonFile("appsettings.Test.json", optional: true)
+                    .AddEnvironmentVariables()
+                    .Build();
+                context.HostingEnvironment.EnvironmentName = "Test";
 
-        // Load configuration
-        var baseConfig = new ConfigurationBuilder()
-            .AddJsonFile("appsettings.json", optional: true)
-            .AddJsonFile("appsettings.Test.json", optional: true)
-            .AddEnvironmentVariables()
-            .Build();
+                var auroraDbConfig = new Dictionary<string, string?>
+                {
+                    ["AuroraDB:Engine"] = baseConfig["AuroraDB:Engine"] ?? "PostgreSQL",
+                    ["AuroraDB:WriteEndpoint"] = "localhost",
+                    ["AuroraDB:ReadEndpoint"] = "localhost",
+                    ["AuroraDB:Database"] = "auroradb",
+                    ["AuroraDB:Username"] = "postgres",
+                    ["AuroraDB:Password"] = "123456",
+                    ["AuroraDB:Port"] = "5432",
+                    ["AuroraDB:MaxPoolSize"] = "100",
+                    ["AuroraDB:MinPoolSize"] = "10",
+                    ["AuroraDB:ConnectionTimeout"] = "30",
+                    ["AuroraDB:CommandTimeout"] = "60",
+                    ["AuroraDB:EnableRetryOnFailure"] = "true",
+                    ["AuroraDB:MaxRetryCount"] = "3",
+                    ["AuroraDB:MaxRetryDelay"] = "30",
+                    ["AuroraDB:EnableSensitiveDataLogging"] = "false",
+                    ["AuroraDB:EnableDetailedErrors"] = "true",
+                    ["AuroraDB:EnableReadReplicas"] = "true",
+                    ["AuroraDB:UseSSL"] = "false",
+                    ["AuroraDB:SSLMode"] = "Disable",
+                    ["AuroraDB:UseIAMAuthentication"] = "false",
+                    ["AuroraDB:Region"] = "us-east-1"
+                };
 
-        var auroraSettings = baseConfig.GetSection("AuroraDB")
-            .AsEnumerable()
-            .Where(x => !string.IsNullOrEmpty(x.Value))
-            .Select(x => new KeyValuePair<string, string?>(x.Key, x.Value))
-            .AsEnumerable();
+                config.AddInMemoryCollection(auroraDbConfig);
+            })
+            .ConfigureServices((context, services) =>
+            {
+                services.AddLogging(b => b.AddXUnit(_output));
+                services.AddAuroraDb(context.Configuration,
+                    (opt) => { });
+                services.AddOptions();
+                services.AddScoped<AuroraDatabaseInitializer>();
+            })
+            .StartAsync();
 
-        if (!auroraSettings.Any())
-        {
-            var config = new ConfigurationBuilder()
-            .AddInMemoryCollection(auroraSettings)
-            .Build();
+        await _testHost.UseAuroraDbMigrationsAsync(seedData: true);
 
-            services.AddLogging(b => b.AddXUnit(_output));
-            services.AddSingleton<IConfiguration>(config);
-            services.AddAuroraDb(config);
-            services.AddOptions();
-        }
-
-        services.AddScoped<AuroraDatabaseInitializer>();
-
-        _provider = services.BuildServiceProvider();
-        _context = _provider.GetRequiredService<AuroraDbContext>();
-
-        // Ensure database is created and schema is up to date
-        try
-        {
-            await _context.Database.EnsureCreatedAsync();
-            _output.WriteLine("Test database initialized successfully");
-        }
-        catch (Exception ex)
-        {
-            _output.WriteLine($"Warning: Could not initialize test database: {ex.Message}");
-            _output.WriteLine("Make sure PostgreSQL is running locally or AWS Aurora credentials are configured");
-        }
+        _context = _testHost.Services.GetRequiredService<AuroraDbContext>();
     }
 
-    public async Task DisposeAsync()
+    [Fact]
+    public async Task InitializeDatabase_ShouldApplyMigrations()
     {
-        // Clean up test data
-        try
-        {
-            await _context.Database.EnsureDeletedAsync();
-        }
-        catch
-        {
-            // Ignore cleanup errors
-        }
+        // Arrange - Reset first
+        var initializer = _testHost.Services.GetRequiredService<AuroraDatabaseInitializer>();
 
-        _provider?.Dispose();
+        await initializer.ResetDatabaseAsync();
+
+        // Act
+        await initializer.InitializeAsync(seedData: true);
+
+        // Assert
+        var info = await initializer.GetDatabaseInfoAsync();
+        Assert.True(info.CanConnect);
+        Assert.True(info.IsUpToDate);
     }
 
     [Fact]
     public async Task Customer_CRUD_Operations_Work()
     {
-        var repository = _provider.GetRequiredService<IAuroraRepository<Customer>>();
+        var repository = _testHost.Services.GetRequiredService<IAuroraRepository<Customer>>();
 
         // Create
         var customer = new Customer
@@ -131,7 +145,7 @@ public class AuroraDBTests(ITestOutputHelper output) : IAsyncLifetime
     [Fact]
     public async Task Bulk_Insert_Operations_Work()
     {
-        var repository = _provider.GetRequiredService<IAuroraRepository<Customer>>();
+        var repository = _testHost.Services.GetRequiredService<IAuroraRepository<Customer>>();
 
         // Create multiple customers
         var customers = Enumerable.Range(1, 50).Select(i => new Customer
@@ -161,7 +175,7 @@ public class AuroraDBTests(ITestOutputHelper output) : IAsyncLifetime
     [Fact]
     public async Task Query_With_Filtering_Works()
     {
-        var repository = _provider.GetRequiredService<IAuroraRepository<Customer>>();
+        var repository = _testHost.Services.GetRequiredService<IAuroraRepository<Customer>>();
 
         // Create test customers
         var customers = new[]
@@ -197,8 +211,8 @@ public class AuroraDBTests(ITestOutputHelper output) : IAsyncLifetime
     [Fact]
     public async Task Complex_Query_With_Includes_Works()
     {
-        var customerRepo = _provider.GetRequiredService<IAuroraRepository<Customer>>();
-        var orderRepo = _provider.GetRequiredService<IAuroraRepository<Order>>();
+        var customerRepo = _testHost.Services.GetRequiredService<IAuroraRepository<Customer>>();
+        var orderRepo = _testHost.Services.GetRequiredService<IAuroraRepository<Order>>();
 
         // Create customer with orders
         var customer = new Customer
@@ -255,7 +269,7 @@ public class AuroraDBTests(ITestOutputHelper output) : IAsyncLifetime
     [Fact]
     public async Task Transaction_Rollback_Works()
     {
-        var repository = _provider.GetRequiredService<IAuroraRepository<Customer>>();
+        var repository = _testHost.Services.GetRequiredService<IAuroraRepository<Customer>>();
 
         var customer = new Customer
         {
@@ -290,8 +304,8 @@ public class AuroraDBTests(ITestOutputHelper output) : IAsyncLifetime
     [Fact]
     public async Task Transaction_Commit_Works()
     {
-        var customerRepo = _provider.GetRequiredService<IAuroraRepository<Customer>>();
-        var orderRepo = _provider.GetRequiredService<IAuroraRepository<Order>>();
+        var customerRepo = _testHost.Services.GetRequiredService<IAuroraRepository<Customer>>();
+        var orderRepo = _testHost.Services.GetRequiredService<IAuroraRepository<Order>>();
 
         var result = await customerRepo.ExecuteInTransactionAsync<(Customer customer, Order order)>(async () =>
         {
@@ -337,7 +351,7 @@ public class AuroraDBTests(ITestOutputHelper output) : IAsyncLifetime
     [Fact]
     public async Task Read_Replica_Query_Works()
     {
-        var repository = _provider.GetRequiredService<IAuroraRepository<Customer>>();
+        var repository = _testHost.Services.GetRequiredService<IAuroraRepository<Customer>>();
 
         // Create test customer
         var customer = new Customer
@@ -366,7 +380,7 @@ public class AuroraDBTests(ITestOutputHelper output) : IAsyncLifetime
     [Fact]
     public async Task Pagination_Works()
     {
-        var repository = _provider.GetRequiredService<IAuroraRepository<Customer>>();
+        var repository = _testHost.Services.GetRequiredService<IAuroraRepository<Customer>>();
 
         // Create test customers
         var customers = Enumerable.Range(1, 25).Select(i => new Customer
@@ -393,5 +407,20 @@ public class AuroraDBTests(ITestOutputHelper output) : IAsyncLifetime
 
         // Clean up
         await repository.BulkDeleteAsync(c => c.Email.StartsWith("page-test-"));
+    }
+
+    public async Task DisposeAsync()
+    {
+        // Clean up test data
+        try
+        {
+            await _context.Database.EnsureDeletedAsync();
+        }
+        catch
+        {
+            // Ignore cleanup errors
+        }
+
+        _testHost.Dispose();
     }
 }
