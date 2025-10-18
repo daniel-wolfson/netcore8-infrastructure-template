@@ -1,11 +1,8 @@
-﻿using Confluent.Kafka;
-using Custom.Framework.Aws.AuroraDB;
+﻿using Custom.Framework.Aws.AuroraDB;
 using Custom.Framework.Aws.AuroraDB.Models;
-using Custom.Framework.Monitoring.Prometheus;
-using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.TestHost;
+using DotNet.Testcontainers.Builders;
 using Microsoft.EntityFrameworkCore;
+using Testcontainers.PostgreSql;
 using Xunit.Abstractions;
 
 namespace Custom.Framework.Tests.AWS;
@@ -19,6 +16,20 @@ public class AuroraDBTests(ITestOutputHelper output) : IAsyncLifetime
     private readonly ITestOutputHelper _output = output;
     private IHost _testHost = default!;
     private AuroraDbContext _context = default!;
+
+    private readonly PostgreSqlContainer _postgresContainer = new PostgreSqlBuilder()
+        .WithImage("postgres:latest")
+        .WithName("postgres-db")
+        .WithNetwork("postgres_pg-network")
+        .WithHostname("postgres")
+        .WithUsername("postgres")
+        .WithPassword("123456")
+        .WithEnvironment("POSTGRES_USER", "postgres")
+        .WithEnvironment("POSTGRES_PASSWORD", "123456")
+        .WithEnvironment("POSTGRES_DB", "postgres")
+        .WithPortBinding(5432, 5432)
+        .WithWaitStrategy(Wait.ForUnixContainer().UntilExternalTcpPortIsAvailable(5432))
+        .Build();
 
     public async Task InitializeAsync()
     {
@@ -62,12 +73,13 @@ public class AuroraDBTests(ITestOutputHelper output) : IAsyncLifetime
             .ConfigureServices((context, services) =>
             {
                 services.AddLogging(b => b.AddXUnit(_output));
-                services.AddAuroraDb(context.Configuration,
-                    (opt) => { });
+                services.AddAuroraDb(context.Configuration);
                 services.AddOptions();
                 services.AddScoped<AuroraDatabaseInitializer>();
             })
             .StartAsync();
+
+        await _postgresContainer.StartAsync();
 
         await _testHost.UseAuroraDbMigrationsAsync(seedData: true);
 
@@ -409,12 +421,13 @@ public class AuroraDBTests(ITestOutputHelper output) : IAsyncLifetime
         await repository.BulkDeleteAsync(c => c.Email.StartsWith("page-test-"));
     }
 
-    public async Task DisposeAsync()
+    public Task DisposeAsync()
     {
         // Clean up test data
         try
         {
-            await _context.Database.EnsureDeletedAsync();
+            //await _context.Database.EnsureDeletedAsync();
+            return _postgresContainer.DisposeAsync().AsTask();
         }
         catch
         {
@@ -422,5 +435,6 @@ public class AuroraDBTests(ITestOutputHelper output) : IAsyncLifetime
         }
 
         _testHost.Dispose();
+        return Task.CompletedTask;
     }
 }
