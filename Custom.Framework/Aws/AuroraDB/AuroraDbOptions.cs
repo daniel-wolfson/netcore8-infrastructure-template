@@ -148,7 +148,7 @@ public class AuroraDbOptions
 
         builder.Append($"Maximum Pool Size={MaxPoolSize};");
         builder.Append($"Minimum Pool Size={MinPoolSize};");
-        builder.Append($"Connection Timeout={ConnectionTimeout};");
+        builder.Append($"Timeout={ConnectionTimeout};"); // Npgsql uses 'Timeout', not 'Connection Timeout'
         builder.Append($"Command Timeout={CommandTimeout};");
         builder.Append($"Pooling=true;");
 

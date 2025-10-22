@@ -1,6 +1,10 @@
+﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Custom.Framework.Aws.AuroraDB;
 
@@ -14,23 +18,38 @@ public static class AuroraDbExtensions
     /// </summary>
     public static IServiceCollection AddAuroraDb(
         this IServiceCollection services,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        Action<AuroraDbOptions>? configureOptions = null)
     {
-        // Configure options
+        // Load AuroraDbOptions from configuration; fall back to defaults if section missing
         var options = configuration.GetSection("AuroraDB").Get<AuroraDbOptions>()
-            ?? throw new InvalidOperationException("AuroraDB configuration is missing");
+            ?? new AuroraDbOptions();
 
+        // Apply optional runtime overrides and register configure delegate for IOptions<AuroraDbOptions>.
+        // The delegate is applied to the created instance and also registered with DI to support consumers
+        // that depend on IOptions<AuroraDbOptions>.
+        if (configureOptions != null)
+        {
+            configureOptions(options);
+            services.Configure(configureOptions);
+        }
+
+        // Register the concrete options instance as a singleton for direct consumption.
+        // When configureOptions was provided, IOptions<AuroraDbOptions> is also available.
+        services.AddSingleton(Options.Create(options));
         services.AddSingleton(options);
-        services.Configure<AuroraDbOptions>(configuration.GetSection("AuroraDB"));
 
         // Register DbContext
         services.AddDbContext<AuroraDbContext>((serviceProvider, optionsBuilder) =>
         {
+            var options = serviceProvider.GetService<AuroraDbOptions>()
+                ?? throw new InvalidOperationException("AuroraDbOptions is not registered");
             ConfigureDbContext(optionsBuilder, options);
         });
 
         // Register repository
-        services.AddScoped(typeof(IAuroraRepository<>), typeof(AuroraRepository<>));
+        services.AddScoped(typeof(IAuroraRepository<>), 
+            typeof(AuroraRepository<>));
 
         // Register database initializer
         services.AddScoped<AuroraDatabaseInitializer>();
@@ -39,30 +58,56 @@ public static class AuroraDbExtensions
     }
 
     /// <summary>
-    /// Add Aurora database services with custom configuration action
+    /// Initialize Aurora database with migrations (for IHost - test scenarios)
     /// </summary>
-    public static IServiceCollection AddAuroraDb(
-        this IServiceCollection services,
-        IConfiguration configuration,
-        Action<AuroraDbOptions> configureOptions)
+    public static async Task<IHost> UseAuroraDbMigrationsAsync(this IHost host, bool seedData = false)
     {
-        var options = configuration.GetSection("AuroraDB").Get<AuroraDbOptions>()
-            ?? new AuroraDbOptions();
+        var initializer = host.Services.GetRequiredService<AuroraDatabaseInitializer>();
+        var logger = host.Services.GetRequiredService<ILogger<AuroraDatabaseInitializer>>();
 
-        configureOptions(options);
-
-        services.AddSingleton(options);
-        services.Configure(configureOptions);
-
-        services.AddDbContext<AuroraDbContext>((serviceProvider, optionsBuilder) =>
+        try
         {
-            ConfigureDbContext(optionsBuilder, options);
-        });
+            if (!await initializer.CanConnectAsync())
+            {
+                logger.LogError("⚠️ Cannot connect to Aurora/PostgreSQL");
+                logger.LogWarning("Make sure docker-compose is running:");
+                logger.LogWarning("  docker compose -f Cstom.Framework/Aws/LocalStack/docker-compose.yaml up -d aurora-postgres");
+            }
 
-        services.AddScoped(typeof(IAuroraRepository<>), typeof(AuroraRepository<>));
-        services.AddScoped<AuroraDatabaseInitializer>();
+            var info = await initializer.GetDatabaseInfoAsync();
+            if (!info.DatabaseExist)
+            {
+                await initializer.EnsureDatabaseExistsAsync();
+                await initializer.AddMigrationAsync("InitialCreate");
 
-        return services;
+                info = await initializer.GetDatabaseInfoAsync();
+                if (!info.DatabaseExist)
+                    return host;
+            }
+
+            logger.LogInformation($"DB State: {info.AppliedMigrations.Count} applied, {info.PendingMigrations.Count} pending");
+
+            if (!info.IsUpToDate || info.AppliedMigrations.Count == 0)
+            {
+                logger.LogInformation("Applying migrations...");
+                await initializer.InitializeAsync(seedData);
+                logger.LogInformation("✅ Migrations applied and data seeded");
+            }
+            else
+            {
+                logger.LogInformation("✅ Database is up to date");
+            }
+        }
+        catch (Npgsql.NpgsqlException ex) when (ex.Message.Contains("does not exist"))
+        {
+            logger.LogError("⚠️ Database 'auroradb' does not exist. Creating...");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError($"❌ Database initialization failed: {ex.Message}");
+            throw;
+        }
+        return host;
     }
 
     private static void ConfigureDbContext(DbContextOptionsBuilder optionsBuilder, AuroraDbOptions options)
@@ -109,11 +154,4 @@ public static class AuroraDbExtensions
             optionsBuilder.EnableDetailedErrors();
     }
 
-    /// <summary>
-    /// Extension to use read replica for a query
-    /// </summary>
-    public static IQueryable<T> UseReadReplica<T>(this IQueryable<T> query) where T : class
-    {
-        return query.AsNoTracking();
-    }
 }
