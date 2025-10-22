@@ -24,38 +24,37 @@ public class PrometheusTests : IAsyncLifetime
     {
         // Setup test host with Prometheus
         _testHost = await new HostBuilder()
+            .ConfigureAppConfiguration((context, config) =>
+            {
+                config.AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["Prometheus:Enabled"] = "true",
+                    ["Prometheus:MetricsEndpoint"] = "/metrics",
+                    ["Prometheus:ApplicationName"] = "test-app",
+                    ["Prometheus:Environment"] = "Test",
+                    ["Prometheus:EnableAspNetCoreMetrics"] = "true",
+                    ["Prometheus:EnableProcessMetrics"] = "true",
+                    ["Prometheus:EnableRuntimeMetrics"] = "true",
+                    ["Prometheus:CustomLabels:team"] = "test-team",
+                    ["Prometheus:CustomLabels:version"] = "1.0.0"
+                });
+            })
+            .ConfigureServices((context, services) =>
+            {
+                services.AddPrometheusMetrics(context.Configuration);
+                services.AddRouting();
+            })
             .ConfigureWebHost(webBuilder =>
             {
-                webBuilder
-                    .UseTestServer()
-                    .ConfigureAppConfiguration((context, config) =>
+                webBuilder.UseTestServer();
+                webBuilder.Configure(app =>
+                {
+                    app.UseRouting();
+                    app.UseEndpoints(endpoints =>
                     {
-                        config.AddInMemoryCollection(new Dictionary<string, string?>
-                        {
-                            ["Prometheus:Enabled"] = "true",
-                            ["Prometheus:MetricsEndpoint"] = "/metrics",
-                            ["Prometheus:ApplicationName"] = "test-app",
-                            ["Prometheus:Environment"] = "Test",
-                            ["Prometheus:EnableAspNetCoreMetrics"] = "true",
-                            ["Prometheus:EnableProcessMetrics"] = "true",
-                            ["Prometheus:EnableRuntimeMetrics"] = "true",
-                            ["Prometheus:CustomLabels:team"] = "test-team",
-                            ["Prometheus:CustomLabels:version"] = "1.0.0"
-                        });
-                    })
-                    .ConfigureServices((context, services) =>
-                    {
-                        services.AddPrometheusMetrics(context.Configuration);
-                        services.AddRouting();
-                    })
-                    .Configure(app =>
-                    {
-                        app.UseRouting();
-                        app.UseEndpoints(endpoints =>
-                        {
-                            endpoints.MapPrometheusMetrics();
-                        });
+                        endpoints.MapPrometheusMetrics();
                     });
+                });
             })
             .StartAsync();
 
