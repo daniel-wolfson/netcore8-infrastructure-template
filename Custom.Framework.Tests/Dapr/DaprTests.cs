@@ -22,7 +22,7 @@ public class DaprTests : IAsyncLifetime
     {
         try
         {
-            _daprContainer = new DaprTestContainer(_output, "integration-test-app");
+            _daprContainer = new DaprTestContainer("integration-test-app") { Output = _output };
             await _daprContainer.InitializeAsync();
 
             // Create Dapr client

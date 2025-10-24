@@ -106,5 +106,36 @@ namespace Custom.Framework.Helpers
         {
             return occupancyCode % 10;
         }
+
+        /// <summary>
+        /// Converts text to standard Unix format:
+        /// - Removes UTF-8 BOM if present.
+        /// - Normalizes line endings to LF ('\n').
+        /// - Optionally ensures a trailing newline at EOF.
+        /// </summary>
+        public static string ToUnixString(this string? text, bool ensureTrailingNewline = false)
+        {
+            if (string.IsNullOrEmpty(text))
+                return string.Empty;
+
+            var s = text;
+
+            // Remove UTF-8 BOM (U+FEFF) if present at the start
+            if (s.Length > 0 && s[0] == '\uFEFF')
+            {
+                s = s[1..];
+            }
+
+            // Normalize line endings to LF
+            s = s.Replace("\r\n", "\n").Replace("\r", "\n");
+
+            // Ensure final newline if requested
+            if (ensureTrailingNewline && s.Length > 0 && s[^1] != '\n')
+            {
+                s += "\n";
+            }
+
+            return s;
+        }
     }
 }

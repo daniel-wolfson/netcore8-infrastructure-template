@@ -83,6 +83,7 @@
     <None Include="AWS\Localstack\volume\cache\server.test.pem" />
     <None Include="AWS\Localstack\volume\cache\server.test.pem.crt" />
     <None Include="AWS\Localstack\volume\cache\server.test.pem.key" />
+    <None Include="dapr\docker-compose.yaml" />
     <None Include="Dapr\README.md" />
     <None Include="Monitoring\cleanup-and-restart.bat" />
     <None Include="Monitoring\diagnose-prometheus.bat" />
@@ -104,10 +105,12 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.0.0" />
     <PackageReference Include="Microsoft.VisualStudio.DiagnosticsHub.BenchmarkDotNetDiagnosers" Version="18.0.36525.3" />
     <PackageReference Include="Moq" Version="4.20.72" />
-    <PackageReference Include="Testcontainers" Version="4.7.0" />
-    <PackageReference Include="Testcontainers.LocalStack" Version="4.7.0" />
-    <PackageReference Include="Testcontainers.PostgreSql" Version="4.7.0" />
-    <PackageReference Include="Testcontainers.Redis" Version="4.7.0" />
+    <PackageReference Include="Npgsql" Version="8.0.8" />
+    <PackageReference Include="System.Net.Http" Version="4.3.4" />
+    <PackageReference Include="Testcontainers" Version="4.8.1" />
+    <PackageReference Include="Testcontainers.LocalStack" Version="4.8.1" />
+    <PackageReference Include="Testcontainers.PostgreSql" Version="4.8.1" />
+    <PackageReference Include="Testcontainers.Redis" Version="4.8.1" />
     <PackageReference Include="Dapr.Client" Version="1.14.0" />
     <PackageReference Include="Dapr.AspNetCore" Version="1.14.0" />
     <PackageReference Include="xunit" Version="2.9.3" />
@@ -129,6 +132,7 @@
   <ItemGroup>
     <Folder Include="AWS\Localstack\Aurora\Postgres-data\" />
     <Folder Include="gRPC\" />
+    <Folder Include="Infrastructure\" />
   </ItemGroup>
 
 </Project>

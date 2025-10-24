@@ -1,12 +1,30 @@
-# Dapr Integration Tests
+﻿# Dapr Integration Tests
 
 This directory contains integration tests for Dapr (Distributed Application Runtime).
 
 ## ?? Contents
 
-- **DaprTestContainer.cs** - Base infrastructure for running Dapr in Docker using Testcontainers
+- **DaprTestContainer.cs** - Unified Dapr stack infrastructure (creates "dapr" compose stack)
 - **DaprIntegrationTests.cs** - Tests for core Dapr features (State, Pub/Sub, Service Invocation)
 - **DaprWebApplicationTests.cs** - Tests for ASP.NET Core application with Dapr sidecar
+
+## ?? Docker Desktop Stack View
+
+After starting Dapr tests, you'll see in Docker Desktop:
+
+```
+?? dapr (2 containers)
+   ??? ?? dapr-redis
+   ??? ?? dapr-sidecar
+```
+
+**Just like your "monitoring" and "kafka" stacks!**
+
+This unified stack approach:
+? Groups Dapr containers together in Docker Desktop  
+? Uses shared network for container communication  
+? Provides clean, organized view of infrastructure  
+? Easy to start/stop entire stack at once  
 
 ## ?? What is Dapr?
 
@@ -25,23 +43,22 @@ This directory contains integration tests for Dapr (Distributed Application Runt
 ## ??? Test Architecture
 
 ```
-???????????????????????????????????????????????
-?         Testcontainers Infrastructure       ?
-?                                             ?
-?  ????????????????      ??????????????????? ?
-?  ?              ?      ?                 ? ?
-?  ?    Redis     ????????  Dapr Sidecar  ? ?
-?  ?  (Port 6379) ?      ?  (daprio/daprd) ? ?
-?  ?              ?      ?                 ? ?
-?  ????????????????      ?  HTTP: 3500     ? ?
-?         ?              ?  gRPC: 50001    ? ?
-?         ?              ??????????????????? ?
-?         ?                      ?           ?
-?         ?                      ?           ?
-?         ????????????????????????           ?
-?                                             ?
-?         Test Application / DaprClient       ?
-???????????????????????????????????????????????
+???????????????????????????????????????
+?         Dapr Stack       ?
+?       (dapr-network)                ?
+???????????????????????????????????????
+?         ?
+?  ????????????      ??????????????? ?
+?  ?  Redis   ???????? Dapr Sidecar? ?
+?  ?  :6379   ?      ? daprio/daprd? ?
+?  ???????????? ? HTTP: 3500  ? ?
+?          ? gRPC: 50001 ? ?
+?  ??????????????? ?
+?        ?         ?
+???????????????????????????????????????
+        ?
+            Test Application
+            (DaprClient)
 ```
 
 ## ?? Required Packages
@@ -51,13 +68,67 @@ Ensure the following packages are installed in `Custom.Framework.Tests.csproj`:
 ```xml
 <PackageReference Include="Dapr.Client" Version="1.14.0" />
 <PackageReference Include="Dapr.AspNetCore" Version="1.14.0" />
-<PackageReference Include="Testcontainers.Redis" Version="3.9.0" />
-<PackageReference Include="DotNet.Testcontainers" Version="3.9.0" />
+<PackageReference Include="Testcontainers.Redis" Version="4.7.0" />
+<PackageReference Include="DotNet.Testcontainers" Version="4.7.0" />
 ```
 
 ## ?? Usage Examples
 
-### 1. Basic State Management Test
+### 1. Basic Test Setup
+
+```csharp
+public class DaprIntegrationTests : IAsyncLifetime
+{
+    private readonly ITestOutputHelper _output;
+    private DaprTestContainer _daprContainer = default!;
+    private DaprClient _daprClient = default!;
+
+    public DaprIntegrationTests(ITestOutputHelper output)
+    {
+        _output = output;
+    }
+
+    public async Task InitializeAsync()
+    {
+   // Start Dapr stack (creates "dapr" compose stack in Docker Desktop)
+        _daprContainer = new DaprTestContainer(_output);
+      await _daprContainer.InitializeAsync();
+
+        // Create Dapr client
+        _daprClient = new DaprClientBuilder()
+       .UseHttpEndpoint(_daprContainer.DaprHttpEndpoint)
+  .UseGrpcEndpoint(_daprContainer.DaprGrpcEndpoint)
+         .Build();
+    }
+
+    [Fact]
+    public async Task StateStore_SaveAndRetrieve_ShouldWork()
+  {
+        // Your test here...
+    }
+
+    public async Task DisposeAsync()
+    {
+      await _daprContainer.DisposeAsync();
+    }
+}
+```
+
+### 2. Custom Stack Name
+
+```csharp
+// Creates "my-dapr-tests" stack in Docker Desktop
+_daprContainer = new DaprTestContainer(_output, appId: "testapp", stackName: "my-dapr-tests");
+```
+
+Result in Docker Desktop:
+```
+?? my-dapr-tests (2 containers)
+   ??? ?? my-dapr-tests-redis
+   ??? ?? my-dapr-tests-sidecar
+```
+
+### 3. State Management Test
 
 ```csharp
 [Fact]
@@ -78,7 +149,7 @@ public async Task StateStore_SaveAndRetrieve_ShouldWork()
 }
 ```
 
-### 2. Pub/Sub Test
+### 4. Pub/Sub Test
 
 ```csharp
 [Fact]
@@ -90,26 +161,9 @@ public async Task PubSub_PublishMessage_ShouldSucceed()
     var message = new Order { Id = 123, Total = 99.99m };
 
     // Act
-    await _daprClient.PublishEventAsync(pubsubName, topic, message);
+await _daprClient.PublishEventAsync(pubsubName, topic, message);
 
     // Assert - Message published successfully
-}
-```
-
-### 3. Web Application Test
-
-```csharp
-[Fact]
-public async Task WebApp_SaveState_ShouldStoreInDapr()
-{
-    // Arrange
-    var request = new { Key = "test", Value = "data" };
-
-    // Act
-    var response = await _httpClient.PostAsJsonAsync("/save-state", request);
-
-    // Assert
-    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 }
 ```
 
@@ -151,9 +205,8 @@ spec:
 
 Docker images used:
 
-- **daprio/daprd:1.13.0** - Dapr runtime (sidecar)
-- **redis:7-alpine** - Redis for state store and pub/sub
-- **daprio/placement** - (optional) for Dapr Actors
+- **daprio/daprd:1.14.4** - Dapr runtime (sidecar)
+- **redis:7.0** - Redis for state store and pub/sub
 
 ## ?? Running Tests
 
@@ -176,6 +229,19 @@ dotnet test --filter "FullyQualifiedName~DaprIntegrationTests.StateStore_SaveAnd
 dotnet test --filter "FullyQualifiedName~Custom.Framework.Tests.Dapr" --logger "console;verbosity=detailed"
 ```
 
+## ?? Viewing in Docker Desktop
+
+While tests are running, open Docker Desktop and you'll see:
+
+```
+Containers
+??? ?? dapr (2 containers)
+?   ??? ?? dapr-redis    (Port 6379)
+?   ??? ?? dapr-sidecar(Ports 3500, 50001)
+```
+
+**Same organization as your monitoring and kafka stacks!**
+
 ## ?? Requirements
 
 - **Docker Desktop** or **Docker Engine** must be running
@@ -196,30 +262,27 @@ docker ps
 docker info
 ```
 
-### Issue: Ports already in use
+### Issue: Containers not showing as "dapr" stack
 
 **Solution:**
-Tests automatically select random ports from the ranges:
-- HTTP: 3500-3600
-- gRPC: 50001-50100
-
-If the problem persists, stop other containers:
-```bash
-docker ps
-docker stop <container-id>
+Ensure the `stackName` parameter is set correctly:
+```csharp
+_daprContainer = new DaprTestContainer(_output, stackName: "dapr");
 ```
+
+All containers must use the same prefix: `dapr-redis`, `dapr-sidecar`
 
 ### Issue: Dapr container won't start
 
 **Solution:**
 Check container logs:
 ```bash
-docker logs <dapr-container-id>
+docker logs dapr-sidecar
 ```
 
 Ensure Redis is running:
 ```bash
-docker ps --filter "ancestor=redis:7-alpine"
+docker ps --filter "name=dapr-redis"
 ```
 
 ## ?? Useful Links
@@ -229,63 +292,32 @@ docker ps --filter "ancestor=redis:7-alpine"
 - [Testcontainers for .NET](https://dotnet.testcontainers.org/)
 - [Dapr Building Blocks](https://docs.dapr.io/concepts/building-blocks-concept/)
 
-## ?? Learning Materials
-
-### Additional Scenarios for Testing:
-
-1. **Actors** - Stateful objects
-2. **Bindings** - Integration with external systems
-3. **Secrets** - Secret management
-4. **Configuration** - Dynamic configuration
-5. **Observability** - Tracing and metrics
-
-### Extension Examples:
-
-```csharp
-// Actor test example
-[Fact]
-public async Task Actor_CreateAndInvoke_ShouldWork()
-{
-    var actorId = new ActorId("test-actor-1");
-    var proxy = ActorProxy.Create<IMyActor>(actorId, "MyActor");
-    
-    await proxy.SetStateAsync("counter", 42);
-    var value = await proxy.GetStateAsync("counter");
-    
-    Assert.Equal(42, value);
-}
-
-// Binding test example
-[Fact]
-public async Task Binding_InvokeOutput_ShouldSendData()
-{
-    await _daprClient.InvokeBindingAsync(
-        "my-binding",
-        "create",
-        new { message = "Hello from binding!" });
-}
-```
-
 ## ? Best Practices
 
-1. **Test Isolation** - Each test should have unique keys
-2. **Cleanup** - Remove test data after execution
-3. **Timeouts** - Set reasonable timeouts for asynchronous operations
-4. **Logging** - Use `ITestOutputHelper` for debugging
-5. **Parallelism** - Dapr tests can run in parallel using different App IDs
+1. **Use consistent stack naming** - All containers get same prefix
+2. **Start containers in parallel** - Faster test initialization
+3. **Use shared network** - Enable container communication
+4. **Test isolation** - Each test should have unique keys
+5. **Cleanup** - Always dispose containers properly
+6. **Logging** - Use `ITestOutputHelper` for debugging
 
-## ?? Contributing
+1. 📝 Summary Table
+Parameter	Value	Meaning
+--app-port	"5000"	App listens on port 5000
+--app-port	"0"	No app (API-only mode)
+--app-address	"localhost" (default)	App is on same machine as Dapr
+--app-address	"host.docker.internal"	App is on Docker host machine
+--app-address	"myapp"	App is a container named "myapp"
+--app-address	"192.168.1.100"	App is at specific IP address
+Your configuration combines both to create a bridge between Dapr (in Docker) and your app (on Windows)!
 
-When adding new tests:
+## ?? Summary
 
-1. Follow existing code style
-2. Add XML comments
-3. Group tests by functionality (#region)
-4. Document complex scenarios
-5. Update this README
+This Dapr test infrastructure:
+- ? Creates unified "dapr" stack in Docker Desktop
+- ? Groups Redis and Dapr sidecar containers together
+- ? Provides shared network for communication
+- ? Easy to start/stop entire stack
+- ? Clean organization matching monitoring/kafka patterns
 
----
-
-**Author:** Infrastructure Team  
-**Created:** 2024  
-**Version:** 1.0
+**Result: Professional Dapr test infrastructure! ??**
