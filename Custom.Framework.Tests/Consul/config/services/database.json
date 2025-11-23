@@ -1,0 +1,20 @@
+{
+  "service": {
+    "name": "database",
+    "id": "postgres-1",
+    "address": "postgres",
+    "port": 5432,
+    "tags": ["database", "postgres", "storage"],
+    "meta": {
+      "db_type": "postgresql",
+      "version": "16"
+    },
+    "check": {
+      "id": "postgres-tcp",
+      "name": "PostgreSQL TCP Check",
+      "tcp": "postgres:5432",
+      "interval": "15s",
+      "timeout": "3s"
+    }
+  }
+}

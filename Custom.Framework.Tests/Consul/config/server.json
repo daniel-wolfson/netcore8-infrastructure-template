@@ -1,0 +1,30 @@
+{
+  "datacenter": "dc1",
+  "data_dir": "/consul/data",
+  "log_level": "INFO",
+  "server": true,
+  "ui_config": {
+    "enabled": true
+  },
+  "addresses": {
+    "http": "0.0.0.0",
+    "dns": "0.0.0.0"
+  },
+  "ports": {
+    "http": 8500,
+    "dns": 8600,
+    "server": 8300,
+    "serf_lan": 8301,
+    "serf_wan": 8302
+  },
+  "bootstrap_expect": 1,
+  "enable_script_checks": true,
+  "disable_update_check": true,
+  "performance": {
+    "raft_multiplier": 1
+  },
+  "telemetry": {
+    "prometheus_retention_time": "60s",
+    "disable_hostname": false
+  }
+}

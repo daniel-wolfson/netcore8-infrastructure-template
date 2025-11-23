@@ -1,0 +1,178 @@
+# Complete microservices infrastructure with Consul service discovery
+# This file demonstrates how to integrate your .NET 8 services with Consul
+
+services:
+  # ==============================================================================
+  # CONSUL - Service Discovery & Configuration
+  # ==============================================================================
+  consul:
+    image: hashicorp/consul:1.22
+    container_name: consul-server
+    hostname: consul-server
+    command: >
+      agent -server 
+      -ui 
+      -bootstrap-expect=1 
+      -client=0.0.0.0 
+      -datacenter=dc1
+      -data-dir=/consul/data
+      -log-level=INFO
+      -enable-script-checks=true
+    ports:
+      - "8500:8500"   # HTTP API and Web UI
+      - "8600:8600"   # DNS
+    volumes:
+      - consul-data:/consul/data
+      - ./consul/config:/consul/config
+    networks:
+      - microservices
+    healthcheck:
+      test: ["CMD", "consul", "members"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+
+  # ==============================================================================
+  # YOUR .NET 8 API SERVICE (Example)
+  # ==============================================================================
+  # my-api:
+  #   image: my-api:latest
+  #   container_name: my-api
+  #   hostname: my-api
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "5000:80"
+  #   environment:
+  #     # Consul configuration
+  #     - Consul__ConsulAddress=http://consul:8500
+  #     - Consul__ServiceName=my-api
+  #     - Consul__ServiceAddress=my-api
+  #     - Consul__ServicePort=80
+  #     - Consul__Tags__0=api
+  #     - Consul__Tags__1=v1
+  #     - Consul__Tags__2=production
+  #     - Consul__HealthCheckPath=/health
+  #     - Consul__HealthCheckInterval=10s
+      
+  #     # ASP.NET Core configuration
+  #     - ASPNETCORE_ENVIRONMENT=Production
+  #     - ASPNETCORE_URLS=http://+:80
+      
+  #     # Database connection (if using PostgreSQL)
+  #     - ConnectionStrings__DefaultConnection=Host=postgres;Database=mydb;Username=admin;Password=admin123
+      
+  #     # Redis connection (if using)
+  #     - Redis__ConnectionString=redis:6379
+  #   depends_on:
+  #     consul:
+  #       condition: service_healthy
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #   networks:
+  #     - microservices
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+  #     interval: 15s
+  #     timeout: 5s
+  #     retries: 3
+  #     start_period: 40s
+  #   restart: unless-stopped
+
+  # ==============================================================================
+  # POSTGRESQL - Database
+  # ==============================================================================
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    hostname: postgres
+    environment:
+      POSTGRES_DB: mydb
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - microservices
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d mydb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+  # ==============================================================================
+  # REDIS - Caching & Session Storage
+  # ==============================================================================
+  redis:
+    image: redis:7.0
+    container_name: redis
+    hostname: redis
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - microservices
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  # ==============================================================================
+  # DAPR SIDECAR (Optional - if using Dapr with Consul)
+  # ==============================================================================
+  # dapr-sidecar:
+  #   image: daprio/daprd:latest
+  #   container_name: dapr-sidecar
+  #   command: >
+  #     ./daprd
+  #     --app-id my-api
+  #     --app-port 80
+  #     --app-protocol http
+  #     --dapr-http-port 3500
+  #     --dapr-grpc-port 50001
+  #     --components-path /components
+  #     --log-level info
+  #   depends_on:
+  #     - my-api
+  #     - redis
+  #     - consul
+  #   network_mode: service:my-api
+  #   volumes:
+  #     - ./dapr/components:/components
+
+# ==============================================================================
+# NETWORKS
+# ==============================================================================
+networks:
+  microservices:
+    driver: bridge
+    name: custom-microservices-network
+
+# ==============================================================================
+# VOLUMES
+# ==============================================================================
+volumes:
+  consul-data:
+    driver: local
+    name: consul-data
+  postgres-data:
+    driver: local
+    name: postgres-data
+  redis-data:
+    driver: local
+    name: redis-data

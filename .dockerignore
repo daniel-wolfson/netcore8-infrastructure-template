@@ -1,0 +1,63 @@
+# Build artifacts
+**/bin/
+**/obj/
+**/out/
+**/publish/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Test results
+**/TestResults/
+**/*.trx
+**/*.coverage
+
+# NuGet
+**/packages/
+*.nupkg
+*.snupkg
+
+# Node modules
+**/node_modules/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Docker
+**/.dockerignore
+**/docker-compose*.yml
+**/Dockerfile*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation
+**/README.md
+**/CHANGELOG.md
+**/LICENSE
+
+# Scripts
+**/scripts/
+
+# Temp files
+**/tmp/
+**/temp/
+**/*.log
+**/*.tmp
+
+# Consul data (when building image)
+consul/data/

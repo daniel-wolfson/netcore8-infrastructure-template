@@ -57,6 +57,7 @@
     <Content Include="appsettings.Test.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="Consul\consul\config\server.json" />
   </ItemGroup>
 
   <ItemGroup>
@@ -83,6 +84,18 @@
     <None Include="AWS\Localstack\volume\cache\server.test.pem" />
     <None Include="AWS\Localstack\volume\cache\server.test.pem.crt" />
     <None Include="AWS\Localstack\volume\cache\server.test.pem.key" />
+    <None Include="Consul\config\server.json" />
+    <None Include="Consul\config\services\database.json" />
+    <None Include="Consul\config\services\my-api.json" />
+    <None Include="Consul\consul\.gitignore" />
+    <None Include="Consul\consul\config\README.md" />
+    <None Include="Consul\docker-consul-quickstart.md" />
+    <None Include="Consul\docker-compose.consul.yml" />
+    <None Include="Consul\docker-compose.yml" />
+    <None Include="Consul\docker-consul-readme.md" />
+    <None Include="Consul\Makefile" />
+    <None Include="Consul\scripts\consul-docker.bat" />
+    <None Include="Consul\scripts\consul-docker.sh" />
     <None Include="dapr\docker-compose.yaml" />
     <None Include="Dapr\README.md" />
     <None Include="Monitoring\cleanup-and-restart.bat" />

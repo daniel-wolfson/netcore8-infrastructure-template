@@ -19,5 +19,6 @@ It contains next sections:
 - Services - contains global services
 - Telemetry - contains telemetry definitions
 - Validation - contains fluent validations
+- Service discovery - contains Consul service discovery integration
 
  

@@ -1,0 +1,21 @@
+{
+  "service": {
+    "name": "my-api",
+    "id": "my-api-1",
+    "address": "my-api",
+    "port": 80,
+    "tags": ["api", "v1", "production"],
+    "meta": {
+      "version": "1.0.0",
+      "environment": "production"
+    },
+    "check": {
+      "id": "my-api-health",
+      "name": "HTTP API Health Check",
+      "http": "http://my-api:80/health",
+      "interval": "10s",
+      "timeout": "5s",
+      "deregister_critical_service_after": "1m"
+    }
+  }
+}

@@ -1,0 +1,9 @@
+# Consul runtime data
+data/
+
+# Temporary files
+*.tmp
+*.log
+
+# Keep config files
+!config/
