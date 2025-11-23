@@ -98,6 +98,7 @@
     <None Include="Consul\scripts\consul-docker.sh" />
     <None Include="dapr\docker-compose.yaml" />
     <None Include="Dapr\README.md" />
+    <None Include="Elastic\docker-compose.elasticsearch.yml" />
     <None Include="Monitoring\cleanup-and-restart.bat" />
     <None Include="Monitoring\diagnose-prometheus.bat" />
     <None Include="Monitoring\Grafana\dashboards\.gitkeep" />
@@ -124,6 +125,7 @@
     <PackageReference Include="Testcontainers.LocalStack" Version="4.8.1" />
     <PackageReference Include="Testcontainers.PostgreSql" Version="4.8.1" />
     <PackageReference Include="Testcontainers.Redis" Version="4.8.1" />
+    <PackageReference Include="Testcontainers.Elasticsearch" Version="4.8.1" />
     <PackageReference Include="Dapr.Client" Version="1.14.0" />
     <PackageReference Include="Dapr.AspNetCore" Version="1.14.0" />
     <PackageReference Include="xunit" Version="2.9.3" />
