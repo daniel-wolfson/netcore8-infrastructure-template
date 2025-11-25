@@ -7,6 +7,7 @@ using DotNet.Testcontainers.Containers;
 using DotNet.Testcontainers.Networks;
 using System.Text.Json.Serialization;
 using Xunit.Abstractions;
+using ServiceInfo = Docker.DotNet.Models.ServiceInfo;
 
 namespace Custom.Framework.Tests.Consul;
 
@@ -404,7 +405,7 @@ public class ConsulTestContainer(string datacenter = "dc1") : IAsyncLifetime
         public IList<PeerInfo> Peers { get; set; } = networkResponse.Peers;
 
         [JsonPropertyName("Services")]
-        public IDictionary<string, Docker.DotNet.Models.ServiceInfo> Services { get; set; } = networkResponse.Services;
+        public IDictionary<string, ServiceInfo> Services { get; set; } = networkResponse.Services;
 
         string INetwork.Name => Name;
 

@@ -98,7 +98,16 @@
     <None Include="Consul\scripts\consul-docker.sh" />
     <None Include="dapr\docker-compose.yaml" />
     <None Include="Dapr\README.md" />
+    <None Include="Elastic\LOGSTASH-CRITICAL-ERROR-LOCATION.md" />
     <None Include="Elastic\docker-compose.elasticsearch.yml" />
+    <None Include="Elastic\LOGSTASH-EMERGENCY-DEBUG-STEPS.md" />
+    <None Include="Elastic\LOGSTASH-KAFKA-ELASTICSEARCH-INTEGRATION.md" />
+    <None Include="Elastic\LOGSTASH-KAFKA-ELASTICSEARCH-SETUP.md" />
+    <None Include="Elastic\LOGSTASH-DIAGNOSTIC-SUMMARY.md" />
+    <None Include="Elastic\LOGSTASH-FIX-SUMMARY.md" />
+    <None Include="Elastic\LOGSTASH-ROOT-CAUSE-FIX.md" />
+    <None Include="Elastic\LOGSTASH-TROUBLESHOOTING.md" />
+    <None Include="Elastic\MANUAL-VERIFICATION-STEPS.md" />
     <None Include="Monitoring\cleanup-and-restart.bat" />
     <None Include="Monitoring\diagnose-prometheus.bat" />
     <None Include="Monitoring\Grafana\dashboards\.gitkeep" />

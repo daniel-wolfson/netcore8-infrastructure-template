@@ -1,4 +1,5 @@
-﻿using Nest;
+﻿using Consul;
+using Nest;
 using Xunit.Abstractions;
 
 namespace Custom.Framework.Tests.Elastic;
@@ -158,15 +159,11 @@ public class ElasticsearchIntegrationTests : IAsyncLifetime
         Assert.True(searchResponse.Total > 0, "Expected at least one document to be found");
         Assert.Equal(1, searchResponse.Total);
 
-        var documentDict = ((IDictionary<string, object>)searchResponse.Documents)
-            .ToDictionary(
-                kvp => kvp.Key,
-                kvp => kvp.Value
-            );
-
-        var traceId = documentDict.FirstOrDefault(x => x.Key == "traceId").Value.ToString();
-        var message = documentDict.FirstOrDefault(x => x.Key == "message").Value.ToString();
-        var level = documentDict.FirstOrDefault(x => x.Key == "level").Value.ToString();
+        var firstDocument = searchResponse.Documents.First() as IDictionary<string, object>;
+        
+        var traceId = firstDocument?["traceId"]?.ToString() ?? string.Empty;
+        var message = firstDocument?["message"]?.ToString() ?? string.Empty;
+        var level = firstDocument?["level"]?.ToString() ?? string.Empty;
 
         Assert.Equal(uniqueTraceId, traceId);
         Assert.Equal("Error", level);
