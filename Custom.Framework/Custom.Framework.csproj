@@ -26,10 +26,22 @@
   <ItemGroup>
     <!-- LocalStack configuration files - not compiled -->
     <None Include="Aws\LocalStack\**\*" />
+    <Compile Include="Azure\Cosmos\CosmosDbExtensions.cs" />
+    <Compile Include="Azure\Cosmos\CosmosDbInitializer.cs" />
+    <Compile Include="Azure\Cosmos\CosmosDbOptions.cs" />
+    <Compile Include="Azure\Cosmos\IOrderRepository.cs" />
+    <Compile Include="Azure\Cosmos\Models\OrderContext.cs" />
+    <Compile Include="Azure\Cosmos\Models\OrderStatus.cs" />
+    <Compile Include="Azure\Cosmos\OrderDbContext.cs" />
+    <Compile Include="Azure\Cosmos\OrderRepository.cs" />
     <Compile Include="Models\Main\TranslatesPackageRequestValidator.cs" />
     <Compile Include="Models\Main\TranslationPackageShowRequest.cs" />
     <Compile Include="Models\Main\TranslationsPackageRequest.cs" />
     <Compile Include="Models\Main\TranslationsPackageResult.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Azure\Cosmos\appsettings.cosmos.json" />
   </ItemGroup>
 
   <ItemGroup>
@@ -51,8 +63,10 @@
     <PackageReference Include="Microsoft.ApplicationInsights" Version="2.23.0" />
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.23.0" />
     <PackageReference Include="Microsoft.AspNetCore.HeaderPropagation" Version="8.0.20" />
+    <PackageReference Include="Microsoft.Azure.Cosmos" Version="3.42.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.11" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Abstractions" Version="8.0.11" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Cosmos" Version="8.0.11" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.11">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
@@ -117,5 +131,11 @@
   <ItemGroup>
     <Folder Include="Aws\AuroraDB\Migrations\" />
     <Folder Include="Aws\LocalStack\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Azure\Cosmos\Readme\INTEGRATION-GUIDE.md" />
+    <None Include="Azure\Cosmos\Readme\IMPLEMENTATION-SUMMARY.md" />
+    <None Include="Azure\Cosmos\Readme\QUICKSTART.md" />
   </ItemGroup>
 </Project>
