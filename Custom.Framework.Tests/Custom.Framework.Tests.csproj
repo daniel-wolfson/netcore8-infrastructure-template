@@ -137,6 +137,16 @@
     <None Include="Monitoring\start-monitoring.bat" />
     <None Include="Monitoring\stop-monitoring.bat" />
     <None Include="Monitoring\TROUBLESHOOTING.md" />
+    <None Include="RabbitMQ\docker-compose.rabbitmq.yml" />
+    <None Include="RabbitMQ\QUEUE-BINDING-FIX.md" />
+    <None Include="RabbitMQ\QUICK-START.md" />
+    <None Include="RabbitMQ\Cmd\rabbitmq-clean.bat" />
+    <None Include="RabbitMQ\Cmd\rabbitmq-logs.bat" />
+    <None Include="RabbitMQ\Cmd\rabbitmq-start.bat" />
+    <None Include="RabbitMQ\Cmd\rabbitmq-stop.bat" />
+    <None Include="RabbitMQ\README.md" />
+    <None Include="RabbitMQ\SUBSCRIBER-IMPLEMENTATION.md" />
+    <None Include="RabbitMQ\WEBAPPLICATIONFACTORY-UPDATE.md" />
   </ItemGroup>
 
   <ItemGroup>

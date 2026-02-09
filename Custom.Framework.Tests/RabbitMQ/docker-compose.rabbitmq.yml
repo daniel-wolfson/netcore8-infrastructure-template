@@ -1,0 +1,33 @@
+services:
+  rabbitmq-test:
+    image: rabbitmq:3.13-management-alpine
+    container_name: rabbitmq-test
+    hostname: rabbitmq-test
+    ports:
+      - "5672:5672"    # AMQP port
+      - "15672:15672"  # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_DEFAULT_VHOST: /
+    volumes:
+      - rabbitmq-test-data:/var/lib/rabbitmq
+    networks:
+      - rabbitmq-test-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+networks:
+  rabbitmq-test-network:
+    driver: bridge
+    name: rabbitmq-test-network
+
+volumes:
+  rabbitmq-test-data:
+    driver: local
+    name: rabbitmq-test-data

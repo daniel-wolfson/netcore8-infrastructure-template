@@ -56,7 +56,7 @@ namespace Custom.Framework.Cache
                 {
                     var cacheKey = key.Split(':')[0] ?? $"{CacheKeys.StaticData}_{_appSettings.Version}";
                     var fieldKey = key.Split(':')[1];
-                    var data = HashGet<string>(cacheKey, fieldKey).ToString();
+                    var data = HashGet<string>(cacheKey, fieldKey)?.ToString();
                     return data;
                 }
                 else
@@ -76,9 +76,12 @@ namespace Custom.Framework.Cache
 
         // current Redis Db
         public IDatabase Database => _cacheDb ??= Connection.GetDatabase();
+        
         // last Init TimeStamp, it is time last reconnect
         public string ReconnectTimeStamp => _initTimeStamp;
+        
         public CacheKeys StaticData => _staticDataKey;
+        
         public string RedisName { get; set; } = string.Empty;
 
         // current redis connection

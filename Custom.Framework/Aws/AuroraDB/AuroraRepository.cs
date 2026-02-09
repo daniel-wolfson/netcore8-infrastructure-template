@@ -443,7 +443,9 @@ public class AuroraRepository<T> : IAuroraRepository<T> where T : class
         var startedTime = Stopwatch.GetTimestamp();
         try
         {
-            var results = await _dbSet.FromSqlRaw(sql, parameters).ToListAsync();
+            var results = await Microsoft.EntityFrameworkCore.RelationalQueryableExtensions
+                .FromSqlRaw(_dbSet, sql, parameters)
+                .ToListAsync();
             _logger.LogDebug("ExecuteSqlQueryAsync returned {Count} items in {ElapsedMs}ms",
                 results.Count, Stopwatch.GetElapsedTime(startedTime).TotalMilliseconds);
             return results;
