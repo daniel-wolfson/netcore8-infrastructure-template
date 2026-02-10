@@ -1,8 +1,5 @@
-npm run test
-
 #!/bin/sh
 #. "$(dirname "$0")/_/husky.sh"
-# & "C:\Program Files\Git\bin\bash.exe" .husky/pre-commit
 
 BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
 GIT_USER=$(git config user.name)
