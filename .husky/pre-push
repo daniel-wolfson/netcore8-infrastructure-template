@@ -17,6 +17,17 @@ if [ "$GIT_EMAIL" = "daniel.wolfson@hotmail.com" ]; then
     exit 0
 fi
 
+# Fast tests only (no container tests)
+#echo "🧪 Running fast tests..."
+#dotnet test --filter "FullyQualifiedName!~ContainerTest&FullyQualifiedName!~IntegrationTest" --no-build
+
+#if [ $? -ne 0 ]; then
+#    echo "❌ Tests failed! Fix them before pushing."
+#    echo "💡 To skip: git push --no-verify"
+#    exit 1
+#fi
+#echo "✅ Ready to push!"
+
 # Define the allowed pattern for branch naming
 BRANCH_PATTERN="^(feature|bugfix|hotfix|test)/[0-9]+_[a-zA-Z0-9_-]+$"
 

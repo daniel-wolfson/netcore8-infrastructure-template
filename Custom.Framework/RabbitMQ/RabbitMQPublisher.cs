@@ -65,15 +65,15 @@ public class RabbitMQPublisher : IRabbitMQPublisher
         }
     }
 
-    public async Task PublishAsync<TMessage>(string exchange, string routingKey, TMessage message, 
+    public async Task PublishAsync<TMessage>(string exchange, string routingKey, TMessage message,
         CancellationToken cancellationToken = default) where TMessage : class
     {
         var properties = CreateBasicProperties();
         await PublishAsync(exchange, routingKey, message, properties, cancellationToken);
     }
 
-    public async Task PublishAsync<TMessage>(string exchange, string routingKey, TMessage message, 
-        IBasicProperties? properties, CancellationToken cancellationToken = default) where TMessage : class
+    public async Task PublishAsync<TMessage>(string exchange, string routingKey, TMessage message,
+        IBasicProperties? properties = null, CancellationToken cancellationToken = default) where TMessage : class
     {
         ThrowIfDisposed();
 
@@ -133,7 +133,7 @@ public class RabbitMQPublisher : IRabbitMQPublisher
         }
     }
 
-    public async Task PublishBatchAsync<TMessage>(string exchange, string routingKey, 
+    public async Task PublishBatchAsync<TMessage>(string exchange, string routingKey,
         IEnumerable<TMessage> messages, CancellationToken cancellationToken = default) where TMessage : class
     {
         ThrowIfDisposed();
@@ -160,16 +160,15 @@ public class RabbitMQPublisher : IRabbitMQPublisher
     {
         foreach (var message in messages)
         {
-            await PublishAsync(exchange, routingKey, message, cancellationToken);
+            await PublishAsync(exchange, routingKey, message, null, cancellationToken);
         }
     }
 
-    public async Task PublishToDeadLetterAsync<TMessage>(string originalExchange, string originalRoutingKey, 
-        TMessage message, Exception? exception = null, int attemptCount = 1, 
+    public async Task PublishToDeadLetterAsync<TMessage>(string originalExchange, string originalRoutingKey,
+        TMessage message, Exception? exception = null, int attemptCount = 1,
         CancellationToken cancellationToken = default) where TMessage : class
     {
-        var properties = CreateBasicProperties();
-        properties.Headers = new Dictionary<string, object?>
+        var headers = new Dictionary<string, object?>
         {
             ["x-original-exchange"] = originalExchange,
             ["x-original-routing-key"] = originalRoutingKey,
@@ -177,8 +176,10 @@ public class RabbitMQPublisher : IRabbitMQPublisher
             ["x-death-time"] = DateTime.UtcNow.ToString("O"),
             ["x-attempt-count"] = attemptCount
         };
+        var properties = CreateBasicProperties(headers);
 
         await PublishAsync(_options.DeadLetterExchange, "dead", message, properties, cancellationToken);
+
         _logger.LogWarning("Message sent to dead letter exchange after {Attempts} attempts", attemptCount);
     }
 
@@ -193,6 +194,53 @@ public class RabbitMQPublisher : IRabbitMQPublisher
     {
         return _connection?.IsOpen == true && !_disposed;
     }
+
+    public void Dispose()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _disposed = true;
+
+        while (_channelPool.TryTake(out var channel))
+        {
+            try
+            {
+                if (channel.IsOpen)
+                {
+                    channel.CloseAsync().GetAwaiter().GetResult();
+                }
+                channel.Dispose();
+            }
+            catch
+            {
+                // Ignore disposal errors
+            }
+        }
+
+        try
+        {
+            if (_connection != null && _connection.IsOpen)
+            {
+                _connection.CloseAsync().GetAwaiter().GetResult();
+            }
+            _connection?.Dispose();
+        }
+        catch
+        {
+            // Ignore disposal errors
+        }
+
+        _channelSemaphore?.Dispose();
+
+        _logger.LogInformation("RabbitMQ Publisher disposed");
+        
+        GC.SuppressFinalize(this);
+    }
+
+    #region private methods
 
     private async Task<IConnection> CreateConnectionAsync()
     {
@@ -224,6 +272,11 @@ public class RabbitMQPublisher : IRabbitMQPublisher
         }
     }
 
+    /// <summary>
+    /// Declare necessary exchanges, queues, and bindings based on configuration
+    /// </summary>
+    /// <returns></returns>
+    /// <exception cref="InvalidOperationException"></exception>
     private async Task DeclareInfrastructureAsync()
     {
         if (_connection == null)
@@ -311,6 +364,11 @@ public class RabbitMQPublisher : IRabbitMQPublisher
         }
     }
 
+    /// <summary>
+    /// Get a channel from the pool or create a new one if necessary
+    /// </summary>
+    /// <returns>A channel instance</returns>
+    /// <exception cref="InvalidOperationException"></exception>
     private async Task<IChannel> GetChannelAsync()
     {
         if (_channelPool.TryTake(out var channel) && channel.IsOpen)
@@ -324,6 +382,10 @@ public class RabbitMQPublisher : IRabbitMQPublisher
         return await _connection.CreateChannelAsync();
     }
 
+    /// <summary>
+    /// Return channel to pool or dispose if it's closed
+    /// </summary>
+    /// <param name="channel">The channel to return or dispose</param>
     private void ReturnChannel(IChannel channel)
     {
         if (channel.IsOpen)
@@ -336,9 +398,14 @@ public class RabbitMQPublisher : IRabbitMQPublisher
         }
     }
 
-    private IBasicProperties CreateBasicProperties()
+    private IBasicProperties CreateBasicProperties(Dictionary<string, object?>? headers = null)
     {
         var properties = new BasicProperties();
+
+        if (headers != null)
+        {
+            properties.Headers = headers;
+        }
 
         if (_options.MessagePersistence)
         {
@@ -367,48 +434,7 @@ public class RabbitMQPublisher : IRabbitMQPublisher
         }
     }
 
-    public void Dispose()
-    {
-        if (_disposed)
-        {
-            return;
-        }
-
-        _disposed = true;
-
-        while (_channelPool.TryTake(out var channel))
-        {
-            try
-            {
-                if (channel.IsOpen)
-                {
-                    channel.CloseAsync().GetAwaiter().GetResult();
-                }
-                channel.Dispose();
-            }
-            catch
-            {
-                // Ignore disposal errors
-            }
-        }
-
-        try
-        {
-            if (_connection != null && _connection.IsOpen)
-            {
-                _connection.CloseAsync().GetAwaiter().GetResult();
-            }
-            _connection?.Dispose();
-        }
-        catch
-        {
-            // Ignore disposal errors
-        }
-
-        _channelSemaphore?.Dispose();
-
-        _logger.LogInformation("RabbitMQ Publisher disposed");
-    }
+    #endregion private methods
 }
 
 /// <summary>
@@ -440,7 +466,7 @@ public class RabbitMQPublisher<TMessage> : IRabbitMQPublisher<TMessage> where TM
         return _publisher.PublishBatchAsync(_exchange, _routingKey, messages, cancellationToken);
     }
 
-    public Task PublishToDeadLetterAsync(TMessage message, Exception? exception = null, 
+    public Task PublishToDeadLetterAsync(TMessage message, Exception? exception = null,
         int attemptCount = 1, CancellationToken cancellationToken = default)
     {
         return _publisher.PublishToDeadLetterAsync(_exchange, _routingKey, message, exception, attemptCount, cancellationToken);

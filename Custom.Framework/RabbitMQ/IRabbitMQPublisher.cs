@@ -11,26 +11,21 @@ public interface IRabbitMQPublisher : IDisposable
     /// <summary>
     /// Publish a single message to an exchange
     /// </summary>
-    Task PublishAsync<TMessage>(string exchange, string routingKey, TMessage message, 
+    Task PublishAsync<TMessage>(string exchange, string routingKey, TMessage message,
         CancellationToken cancellationToken = default) where TMessage : class;
 
     /// <summary>
     /// Publish multiple messages in batch (optimized for throughput)
     /// </summary>
-    Task PublishBatchAsync<TMessage>(string exchange, string routingKey, IEnumerable<TMessage> messages, 
+    Task PublishBatchAsync<TMessage>(string exchange, string routingKey, IEnumerable<TMessage> messages,
         CancellationToken cancellationToken = default) where TMessage : class;
 
-    /// <summary>
-    /// Publish message with custom properties
-    /// </summary>
-    Task PublishAsync<TMessage>(string exchange, string routingKey, TMessage message, 
-        IBasicProperties? properties, CancellationToken cancellationToken = default) where TMessage : class;
 
     /// <summary>
     /// Publish to dead letter exchange
     /// </summary>
-    Task PublishToDeadLetterAsync<TMessage>(string originalExchange, string originalRoutingKey, 
-        TMessage message, Exception? exception = null, int attemptCount = 1, 
+    Task PublishToDeadLetterAsync<TMessage>(string originalExchange, string originalRoutingKey,
+        TMessage message, Exception? exception = null, int attemptCount = 1,
         CancellationToken cancellationToken = default) where TMessage : class;
 
     /// <summary>
@@ -62,6 +57,6 @@ public interface IRabbitMQPublisher<TMessage> : IDisposable where TMessage : cla
     /// <summary>
     /// Publish to dead letter queue
     /// </summary>
-    Task PublishToDeadLetterAsync(TMessage message, Exception? exception = null, 
+    Task PublishToDeadLetterAsync(TMessage message, Exception? exception = null,
         int attemptCount = 1, CancellationToken cancellationToken = default);
 }

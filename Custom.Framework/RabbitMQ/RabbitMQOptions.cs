@@ -180,7 +180,7 @@ public class ExchangeConfig
     public string Type { get; set; } = "topic"; // topic, direct, fanout, headers
     public bool Durable { get; set; } = true;
     public bool AutoDelete { get; set; } = false;
-    public Dictionary<string, object> Arguments { get; set; } = new();
+    public Dictionary<string, object?> Arguments { get; set; } = new();
 }
 
 /// <summary>
@@ -194,5 +194,5 @@ public class QueueConfig
     public int? MaxLength { get; set; }
     public long? MaxLengthBytes { get; set; }
     public int? MessageTtl { get; set; }
-    public Dictionary<string, object> Arguments { get; set; } = new();
+    public Dictionary<string, object?> Arguments { get; set; } = new();
 }

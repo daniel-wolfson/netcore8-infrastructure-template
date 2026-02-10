@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using System.Diagnostics;
 using System.Net;
 
 namespace Custom.Framework.Models
@@ -25,6 +26,7 @@ namespace Custom.Framework.Models
 
         public ApiResponse(int statusCode, IEnumerable<ApiValidationError>? validationErrors = null)
         {
+            TraceId = Activity.Current?.Id ?? Guid.NewGuid().ToString();
             StatusCode = ((HttpStatusCode)statusCode).ToString();
             Errors = validationErrors; //ErrorInfo = new ApiError(400, validationErrors);
         }
