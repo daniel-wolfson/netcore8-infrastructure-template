@@ -60,6 +60,8 @@
     <PackageReference Include="HotChocolate.Data" Version="15.1.10" />
     <PackageReference Include="HotChocolate.Data.EntityFramework" Version="15.1.10" />
     <PackageReference Include="HotChocolate.Types.Filters" Version="13.9.15" />
+    <PackageReference Include="MassTransit" Version="9.0.1" />
+    <PackageReference Include="MassTransit.RabbitMQ" Version="9.0.1" />
     <PackageReference Include="Microsoft.ApplicationInsights" Version="2.23.0" />
     <PackageReference Include="Microsoft.ApplicationInsights.AspNetCore" Version="2.23.0" />
     <PackageReference Include="Microsoft.AspNetCore.HeaderPropagation" Version="8.0.20" />
@@ -132,6 +134,7 @@
   <ItemGroup>
     <Folder Include="Aws\AuroraDB\Migrations\" />
     <Folder Include="Aws\LocalStack\" />
+    <Folder Include="Billing\Queries\" />
   </ItemGroup>
 
   <ItemGroup>
